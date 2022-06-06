@@ -1,5 +1,5 @@
 package goscript
 
-var VENDORPATH = "./vendor"
+var VENDORPATH = "../vendor"
 
-var STDPATH = "./standard"
+var STDPATH = "../standard"

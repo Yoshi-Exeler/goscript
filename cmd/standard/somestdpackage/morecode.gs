@@ -1,3 +1,0 @@
-func B() {
-    return
-}

@@ -19,7 +19,7 @@ func TestGetRequiredExternals(t *testing.T) {
 }
 
 func TestSourceWalk(t *testing.T) {
-	ret, err := goscript.SourceWalk("../tests/")
+	ret, err := goscript.SourceWalk("../tests/externals.gs", "../tests/")
 	if err != nil {
 		t.Fatalf("got error %v", err)
 	}

@@ -95,14 +95,19 @@ func GetRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 // SourceWalk will discover source files and parse the imports required by the application
 // at the specified path  If a required external import is not present in the vendor directory,
 // this function will treat that as an error.
-func SourceWalk(mainPath string) (*ApplicationSource, error) {
+func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
+	// get the external modules required by our app
+	dependencies, err := GetRequiredExternals(mainPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get required external modules with error %v", err)
+	}
 	// index the vendor directory
 	vendorIndex, err := indexModuleCollection(VENDORPATH, "ext")
 	if err != nil {
 		return nil, fmt.Errorf("failed to index vendor directory with error %v", err)
 	}
 	// index the local directory (mainPath)
-	localIndex, err := indexModuleCollection(mainPath, "loc")
+	localIndex, err := indexModuleCollection(workspace, "loc")
 	if err != nil {
 		return nil, fmt.Errorf("failed to index local directory with error %v", err)
 	}
@@ -111,19 +116,26 @@ func SourceWalk(mainPath string) (*ApplicationSource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to index standard directory with error %v", err)
 	}
+	// now ensure all packages that the application uses actually exist locally
+	for _, dependency := range dependencies {
+		if vendorIndex[dependency.Name] == nil {
+			return nil, fmt.Errorf("required external module %v not found", dependency.Name)
+		}
+	}
+
 	fmt.Println(vendorIndex, localIndex, standardIndex)
 	return nil, nil
 }
 
 // indexModuleCollection will create an index of a module collection directory such as $VENDORPATH or the local path
-func indexModuleCollection(path string, relativeRoot string) (map[string]ModuleSource, error) {
+func indexModuleCollection(path string, relativeRoot string) (map[string]*ModuleSource, error) {
 	// index the directory
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read directory with error %v", err)
 	}
 	// create a collection for vendor modules
-	modules := make(map[string]ModuleSource)
+	modules := make(map[string]*ModuleSource)
 	// filter the entries
 	for _, entry := range entries {
 		// skip everything that isnt a directory
@@ -140,7 +152,7 @@ func indexModuleCollection(path string, relativeRoot string) (map[string]ModuleS
 }
 
 // recAddModule will add the module at the specified path and all its submodules to the out map
-func recAddModule(path string, importPath string, name string, out map[string]ModuleSource) error {
+func recAddModule(path string, importPath string, name string, out map[string]*ModuleSource) error {
 	this := ModuleSource{
 		Name:       name,
 		Path:       path,
@@ -168,6 +180,6 @@ func recAddModule(path string, importPath string, name string, out map[string]Mo
 	// set the module hash
 	this.Hash = hex.EncodeToString(hash.Sum(nil))
 	// append the entry to the output list
-	out[name] = this
+	out[name] = &this
 	return nil
 }

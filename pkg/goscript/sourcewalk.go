@@ -127,7 +127,7 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 			return nil, fmt.Errorf("required external module %v not found", dependency.Name)
 		}
 	}
-
+	// TODO: expand module graph
 	fmt.Println(vendorIndex, localIndex, standardIndex)
 	return nil, nil
 }

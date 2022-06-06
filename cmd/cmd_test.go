@@ -17,3 +17,11 @@ func TestGetRequiredExternals(t *testing.T) {
 	}
 	fmt.Printf("%+v\n", *ret[0])
 }
+
+func TestSourceWalk(t *testing.T) {
+	ret, err := goscript.SourceWalk("../tests/")
+	if err != nil {
+		t.Fatalf("got error %v", err)
+	}
+	fmt.Printf("%+v\n", ret)
+}

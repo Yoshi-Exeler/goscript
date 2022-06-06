@@ -27,7 +27,9 @@ type ExternalModuleSource struct {
 	Branch  string // branch from which to get the version (empty=master)
 }
 
-var extRegex = regexp.MustCompile(`(?mU)external ([a-zA-Z]*) from "(.*)"`)
+var EXTERNAL_DIRECTIVE_REGEX = regexp.MustCompile(`(?mU)external ([a-zA-Z]*) from "(.*)"`)
+var VERSION_TAG_REGEX = regexp.MustCompile(`(?m)@version=([\^0-9\.]*)`)
+var BRNACH_TAG_REGEX = regexp.MustCompile(`(?m)@branch=([0-9a-zA-Z\.]*)`)
 
 // GetRequiredExternals returns the list of all external modules required by the application at main path
 func GetRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
@@ -38,7 +40,7 @@ func GetRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 	}
 	ret := []*ExternalModuleSource{}
 	// regex for our external definitions
-	matches := extRegex.FindAllStringSubmatch(string(content), -1)
+	matches := EXTERNAL_DIRECTIVE_REGEX.FindAllStringSubmatch(string(content), -1)
 	for _, match := range matches {
 		if len(match) != 3 {
 			return nil, fmt.Errorf("matched invalid external definition")
@@ -46,20 +48,24 @@ func GetRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 		// if a version and or branch tag exist, process them
 		version := ""
 		branch := ""
-		// split around the @ tag if we have one
+		// check for a version tag
+		versionMatch := VERSION_TAG_REGEX.FindStringSubmatch(match[2])
+		if len(versionMatch) == 2 {
+			version = versionMatch[1]
+		}
+		// check for a branch tag
+		branchMatch := BRNACH_TAG_REGEX.FindStringSubmatch(match[2])
+		if len(branchMatch) == 2 {
+			branch = branchMatch[1]
+		}
+		// cleanup the url
 		if strings.Contains(match[2], "@") {
 			parts := strings.Split(match[2], "@")
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("external url %v may only contain one @ sign", match[2])
+			if len(parts) == 0 {
+				return nil, fmt.Errorf("failed to cleanup external package url %v", match[2])
 			}
-			// subsplit around the / for the branch
-			if strings.Contains(parts[1], "/") {
-				subparts := strings.Split(parts[1], "/")
-				version = subparts[0]
-				branch = subparts[1]
-			} else {
-				version = parts[1]
-			}
+			// use the base url
+			match[2] = parts[0]
 		}
 		// save this module requirement
 		ret = append(ret, &ExternalModuleSource{

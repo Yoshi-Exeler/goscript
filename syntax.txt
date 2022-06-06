@@ -123,9 +123,10 @@ import "loc/module1/submodule1/"
 import "loc/<module name>"
 Means import this submodule directly using its default name
 
-external remotemodule from "http://someremotething.com/a" branch "mybranch" version "^1.2.0"
-external <alias> from "<source url>" branch? "<mybranch>" version? "<version expr>"
+external remotemodule from "http://someremotething.com/a@version=^1.0.0@branch=master"
+external <alias> from "<source url>"
 Means declare the module remotemodule importable, referring to the folder at the url. folder will be git cloned from the git remote
+the optional version and branch tags will be parsed from the url
 
 external modules are analyzed when they are added at compile time. If an external module should use external dependencies, those must be listed
 in its application file. The import analyzer will build a dependency graph dynamically.

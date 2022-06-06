@@ -14,6 +14,12 @@ Declaring and initializing an array:
 let x: []string = []
 let <name>: []<type> = <array literal>
 
+Conditions:
+if a > 5 {
+
+}
+if <condition> {}
+
 count loop:
 for let i: int = 0; i < 10; i++ {}
 for <declaration>;<condition>;<action> {}

@@ -27,9 +27,12 @@ Compiler stages:
 -> For each module:
     Merge all files in the module into one blob
     dedupe imports
-    prefix all symbols with the module name
-    replace all external symbol references with their expected name after the merge (module_symbol)
+    prefix all symbols with the moduleHash for the module they come from
+    replace all external symbol references with their expected name after the merge (moduleHash_symbol)
     expand shortcodes
--> merge all module blobs into a final blobs
+-> merge all module blobs into a final blob
+-> delete the application directive
+-> delete external directives
+-> delete comments
 
 [3] Tokenize

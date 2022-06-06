@@ -26,6 +26,48 @@ function definition:
 func myfunc(a: string, b: int) => x: int, y: string {}
 func <name>(<p1>: <type>, <p2>: <type>) => <rp1>: <type>, <rp2>: <type> {}
 
+Arithmetic Operators:
++  = simple addition
+-  = simple subtraction
+*  = simple multiplication
+/  = float division
+// = integer division
+%  = modulo
+** = expo
+
+Comparison Operators:
+>  = bigger than
+<  = smaller than
+>= = bigger or equal
+<= = smaller or equal
+== = exactly equal
+!= = not equal
+
+Logical Operators:
+&& = logical and
+|| = logical or
+
+Bitwise Operators:
+&  = bitwise and
+|  = bitwise or
+>> = rshift
+<< = lshift
+^  = XOR
+~  = invert
+
+Shortcodes:
+a += b  >> a = a +  b 
+a -= b  >> a = a -  b
+a *= b  >> a = a *  b
+a /= b  >> a = a /  b
+a //= b >> a = a // b
+a &= b  >> a = a &  b
+a |= b  >> a = a |  b
+a ^= b  >> a = a ^  b  
+a++     >> a = a + 1
+a--     >> a = a - 1
+
+
 List of primitives:
 int8, int16, int32, int64
 uint8, uint16, uint32, uint64
@@ -63,21 +105,24 @@ the main file must be marked by beginning with
 application MyApp
 
 to import a package use the import statement:
-import "./module1"
-import "./<module name>"
+import "loc/module1"
+import "loc/<module name>"
 Means import this this module directly using its default name
 
-import "./module1" as mymodule
-import "./<module name>" as <module alias>
+import "loc/module1" as mymodule
+import "loc/<module name>" as <module alias>
 Means import this this module directly using the name alias mymodule
 
-import "./module1/submodule1/"
-import "./<module name>"
+import "loc/module1/submodule1/"
+import "loc/<module name>"
 Means import this submodule directly using its default name
 
-external remotemodule from "http://someremotething.com/a"
-external <alias> from "<source url>"
+external remotemodule from "http://someremotething.com/a" branch "mybranch" version "^1.2.0"
+external <alias> from "<source url>" branch? "<mybranch>" version? "<version expr>"
 Means declare the module remotemodule importable, referring to the folder at the url. folder will be git cloned from the git remote
+
+external modules are analyzed when they are added at compile time. If an external module should use external dependencies, those must be listed
+in its application file. The import analyzer will build a dependency graph dynamically.
 
 import "ext/module1"
 import "<standard module name>"

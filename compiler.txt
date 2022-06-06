@@ -34,5 +34,6 @@ Compiler stages:
 -> delete the application directive
 -> delete external directives
 -> delete comments
+-> The result of this step will be called the fully qualified source code or fqsc for short
 
 [3] Tokenize

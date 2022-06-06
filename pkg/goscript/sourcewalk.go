@@ -23,8 +23,13 @@ type ModuleSource struct {
 	Path       string               // actual path of the module relative to its root
 	ImportPath string               // the path using which this module can be imported (without its prefix)
 	RootType   ModuleSourceRootType // type of the root this module can be found under
-	Files      []string             // paths to all the files in the module
+	Files      []SourceFile         // paths to all the files in the module
 	Hash       string               // the hash uniquely identifying this module
+}
+
+type SourceFile struct {
+	Path    string // path to the source file
+	Content string // content of the source file
 }
 
 type ApplicationSource struct {
@@ -46,7 +51,7 @@ var VERSION_TAG_REGEX = regexp.MustCompile(`(?m)@version=([\^0-9\.]*)`)
 var BRNACH_TAG_REGEX = regexp.MustCompile(`(?m)@branch=([0-9a-zA-Z\.]*)`)
 
 // GetRequiredExternals returns the list of all external modules required by the application at main path
-func GetRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
+func getRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 	// read the main file into memory
 	content, err := os.ReadFile(mainPath)
 	if err != nil {
@@ -97,7 +102,7 @@ func GetRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 // this function will treat that as an error.
 func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 	// get the external modules required by our app
-	dependencies, err := GetRequiredExternals(mainPath)
+	dependencies, err := getRequiredExternals(mainPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required external modules with error %v", err)
 	}
@@ -172,8 +177,16 @@ func recAddModule(path string, importPath string, name string, out map[string]*M
 			recAddModule(filepath.Join(path, entry.Name()), importPath+"/"+entry.Name(), entry.Name(), out)
 			continue
 		}
+		// read its content
+		content, err := os.ReadFile(filepath.Join(path, entry.Name()))
+		if err != nil {
+			return fmt.Errorf("cannot read source file %v with error %v", filepath.Join(path, entry.Name()), err)
+		}
 		// otherwise, we add this entry to the file list
-		this.Files = append(this.Files, filepath.Join(path, entry.Name()))
+		this.Files = append(this.Files, SourceFile{
+			Path:    filepath.Join(path, entry.Name()),
+			Content: string(content),
+		})
 		// and write its name and path into the hash
 		hash.Write([]byte(filepath.Join(path, entry.Name())))
 	}

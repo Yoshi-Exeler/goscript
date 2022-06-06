@@ -1,7 +1,9 @@
 application externaltest
 
-external extPrint from "https://github.com/Yoshi-Exeler/goscript@version=1.0.0@branch=dev"
+external db from "https://github.com/Yoshi-Exeler/goscript@branch=master"
+
+import "ext/db"
 
 func main() {
-    extPrint.EPrint("sometext")
+    db.Connect()
 }

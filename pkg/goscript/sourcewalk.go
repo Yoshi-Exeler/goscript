@@ -97,17 +97,17 @@ func GetRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 // this function will treat that as an error.
 func SourceWalk(mainPath string) (*ApplicationSource, error) {
 	// index the vendor directory
-	vendorIndex, err := indexSourceRoot(VENDORPATH)
+	vendorIndex, err := indexSourceRoot(VENDORPATH, "ext")
 	if err != nil {
 		return nil, fmt.Errorf("failed to index vendor directory with error %v", err)
 	}
 	// index the local directory (mainPath)
-	localIndex, err := indexSourceRoot(mainPath)
+	localIndex, err := indexSourceRoot(mainPath, "loc")
 	if err != nil {
 		return nil, fmt.Errorf("failed to index local directory with error %v", err)
 	}
 	// index the standard directory
-	standardIndex, err := indexSourceRoot(STDPATH)
+	standardIndex, err := indexSourceRoot(STDPATH, "std")
 	if err != nil {
 		return nil, fmt.Errorf("failed to index standard directory with error %v", err)
 	}
@@ -115,7 +115,7 @@ func SourceWalk(mainPath string) (*ApplicationSource, error) {
 	return nil, nil
 }
 
-func indexSourceRoot(path string) (map[string]ModuleSource, error) {
+func indexSourceRoot(path string, relativeRoot string) (map[string]ModuleSource, error) {
 	// index the directory
 	entries, err := os.ReadDir(path)
 	if err != nil {
@@ -130,7 +130,7 @@ func indexSourceRoot(path string) (map[string]ModuleSource, error) {
 			continue
 		}
 		// add this module and all its submodules to the vendor module collection
-		err = dfsAddModule(filepath.Join(path, entry.Name()), entry.Name(), modules)
+		err = dfsAddModule(filepath.Join(path, entry.Name()), relativeRoot+"/"+entry.Name(), entry.Name(), modules)
 		if err != nil {
 			return nil, fmt.Errorf("failed to index directory %v", err)
 		}
@@ -138,10 +138,11 @@ func indexSourceRoot(path string) (map[string]ModuleSource, error) {
 	return modules, nil
 }
 
-func dfsAddModule(path string, name string, out map[string]ModuleSource) error {
+func dfsAddModule(path string, importPath string, name string, out map[string]ModuleSource) error {
 	this := ModuleSource{
-		Name: name,
-		Path: path,
+		Name:       name,
+		Path:       path,
+		ImportPath: importPath,
 	}
 	// list the specified directory
 	entries, err := os.ReadDir(path)
@@ -154,7 +155,7 @@ func dfsAddModule(path string, name string, out map[string]ModuleSource) error {
 	for _, entry := range entries {
 		// if we have found a submodule recursively add it too
 		if entry.IsDir() {
-			dfsAddModule(filepath.Join(path, entry.Name()), entry.Name(), out)
+			dfsAddModule(filepath.Join(path, entry.Name()), importPath+"/"+entry.Name(), entry.Name(), out)
 			continue
 		}
 		// otherwise, we add this entry to the file list

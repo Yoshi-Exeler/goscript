@@ -120,6 +120,7 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 		return nil, fmt.Errorf("failed to get required external modules with error %v", err)
 	}
 	fmt.Printf("[GSC][sourceWalk] application requires %v direct external dependencies\n", len(dependencies))
+	// TODO: call external dependency resolver here
 	fmt.Printf("[GSC][sourceWalk] begin indexing. local=%v vendor=%v standard=%v\n", workspace, VENDORPATH, STDPATH)
 	// index the vendor directory
 	vendorIndex, err := indexModuleCollection(VENDORPATH, "ext")
@@ -159,14 +160,27 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 	}
 	// stip comments
 	mainContent = []byte(stripComments(string(mainContent)))
-	// return the app source struct
-	return &ApplicationSource{
+	// declare app source
+	src := &ApplicationSource{
 		ApplicationFile: SourceFile{
 			Path:    mainPath,
 			Content: string(mainContent),
+			Imports: make(map[string]*ImportDirective),
 		},
 		Modules: flatDeps,
-	}, nil
+	}
+	// add import information to the main file
+	mainImports, err := getImportsFromSourceText(string(mainContent))
+	if err != nil {
+		return nil, fmt.Errorf("could not get main file imports with error %v", err)
+	}
+	for _, imp := range mainImports {
+		alloc := *imp
+		src.ApplicationFile.Imports[imp.Alias] = &alloc
+	}
+	fmt.Println("IMPS:", src.ApplicationFile.Imports["db"])
+	// return the app source struct
+	return src, nil
 }
 
 var IMPORT_REGEX = regexp.MustCompile(`import "(.*)"\s*\n`)
@@ -196,7 +210,7 @@ func getImportsFromSourceText(source string) ([]*ImportDirective, error) {
 			RootType:     rt,
 			Name:         fullparts[len(fullparts)-1],
 			RawDirective: match[1],
-			ImportPath:   parts[1],
+			ImportPath:   match[1],
 			Alias:        fullparts[len(fullparts)-1],
 		})
 	}
@@ -298,19 +312,19 @@ func resolveUntilCompletion(module *ModuleSource, vendorIndex map[string]*Module
 func findModuleInIndices(imp *ImportDirective, vendorIndex map[string]*ModuleSource, localIndex map[string]*ModuleSource, standardIndex map[string]*ModuleSource) (*ModuleSource, error) {
 	switch imp.RootType {
 	case LOCAL:
-		mod := localIndex["loc/"+imp.ImportPath]
+		mod := localIndex[imp.ImportPath]
 		if mod == nil {
 			return nil, fmt.Errorf("module %v not found in local workspace", imp.ImportPath)
 		}
 		return mod, nil
 	case STANDARD:
-		mod := standardIndex["std/"+imp.ImportPath]
+		mod := standardIndex[imp.ImportPath]
 		if mod == nil {
 			return nil, fmt.Errorf("module %v not found in standard library", imp.ImportPath)
 		}
 		return mod, nil
 	case VENDOR:
-		mod := vendorIndex["ext/"+imp.ImportPath]
+		mod := vendorIndex[imp.ImportPath]
 		if mod == nil {
 			return nil, fmt.Errorf("module %v not found in vendor directory", imp.ImportPath)
 		}
@@ -350,6 +364,7 @@ func recAddModule(path string, importPath string, name string, out map[string]*M
 		Name:       name,
 		Path:       path,
 		ImportPath: importPath,
+		Imports:    make(map[string]*ImportDirective),
 	}
 	// list the specified directory
 	entries, err := os.ReadDir(path)

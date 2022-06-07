@@ -46,7 +46,7 @@ func generateFQSC(source *ApplicationSource) (string, error) {
 		mod.Content = fqsc
 		fmt.Printf("[GSC][genFQSC] module=%v fqsc:\n%v\n", mod.ImportPath, mod.Content)
 	}
-	fqsc, err := fixReferences(source.ApplicationFile.Content, nil, source.Modules)
+	fqsc, err := fixMainFileReferences(source.ApplicationFile.Content, &source.ApplicationFile, source.Modules)
 	if err != nil {
 		return "", fmt.Errorf("failed to fix references for main file with error %v", err)
 	}
@@ -64,7 +64,7 @@ func fixReferences(source string, module *ModuleSource, modules []*ModuleSource)
 	sourceMask := getStringMask(source)
 	// get both index and full matches of symbols in the source code
 	symbolIndexMatches := EXTERNAL_SYMBOL_REGEX.FindAllStringIndex(source, -1)
-	fullMatches := EXTERNAL_DIRECTIVE_REGEX.FindAllStringSubmatch(source, -1)
+	fullMatches := EXTERNAL_SYMBOL_REGEX.FindAllStringSubmatch(source, -1)
 	for i := 0; i < len(symbolIndexMatches); i++ {
 		// skip matches that are inside of a string
 		if sourceMask[symbolIndexMatches[i][0]] {
@@ -87,11 +87,44 @@ func fixReferences(source string, module *ModuleSource, modules []*ModuleSource)
 			return "", fmt.Errorf("imported module %v not found in local modules", fullMatches[i][1])
 		}
 		// generate the new symbol to replace the current one
-		newSymbol := fmt.Sprintf("%v_%v_%v.%v", targetModule.Hash, targetModule.Name, fullMatches[i][1], fullMatches[i][2])
-		for j := symbolIndexMatches[i][0]; j < symbolIndexMatches[i][1]; j++ {
-			// replace the relevant section in the fqsc
-			source = source[:symbolIndexMatches[i][0]] + newSymbol + source[symbolIndexMatches[i][1]:]
+		newSymbol := fmt.Sprintf("fn_%v_%v_%v", targetModule.Hash, targetModule.Name, fullMatches[i][2])
+		source = source[:symbolIndexMatches[i][0]] + newSymbol + source[symbolIndexMatches[i][1]:]
+	}
+	return source, nil
+}
+
+func fixMainFileReferences(source string, file *SourceFile, modules []*ModuleSource) (string, error) {
+	// get the string mask for the source code
+	sourceMask := getStringMask(source)
+	// get both index and full matches of symbols in the source code
+	symbolIndexMatches := EXTERNAL_SYMBOL_REGEX.FindAllStringIndex(source, -1)
+	fullMatches := EXTERNAL_SYMBOL_REGEX.FindAllStringSubmatch(source, -1)
+	for i := 0; i < len(symbolIndexMatches); i++ {
+		// skip matches that are inside of a string
+		if sourceMask[symbolIndexMatches[i][0]] {
+			continue
 		}
+		// get the referenced import
+		symbolImport := file.Imports[fullMatches[i][1]]
+		if symbolImport == nil {
+			return "", fmt.Errorf("symbol %v used but not imported", fullMatches[i][1])
+		}
+		// find the imported module in the module collection
+		fmt.Printf("%v\n", symbolImport.ImportPath)
+		var targetModule *ModuleSource
+		for _, mod := range modules {
+			alloc := *mod
+			if mod.ImportPath == symbolImport.ImportPath {
+				targetModule = &alloc
+				break
+			}
+		}
+		if targetModule == nil {
+			return "", fmt.Errorf("imported module %v not found in local modules", fullMatches[i][1])
+		}
+		// generate the new symbol to replace the current one
+		newSymbol := fmt.Sprintf("fn_%v_%v_%v", targetModule.Hash, targetModule.Name, fullMatches[i][2])
+		source = source[:symbolIndexMatches[i][0]+1] + newSymbol + source[symbolIndexMatches[i][1]:]
 	}
 	return source, nil
 }
@@ -115,8 +148,8 @@ func getStringMask(source string) []bool {
 
 func prefixSymbolNames(source string, prefix string, name string) string {
 	// find all struct definitions
-	stepOne := STRUCT_NAME_REGEX.ReplaceAllString(source, fmt.Sprintf("struct %v_%v_$1 {", prefix, name))
-	stepTwo := FUNC_NAME_REGEX.ReplaceAllString(stepOne, fmt.Sprintf("func %v_%v_$1(", prefix, name))
+	stepOne := STRUCT_NAME_REGEX.ReplaceAllString(source, fmt.Sprintf("struct st_%v_%v_$1 {", prefix, name))
+	stepTwo := FUNC_NAME_REGEX.ReplaceAllString(stepOne, fmt.Sprintf("func fn_%v_%v_$1(", prefix, name))
 	return stepTwo
 }
 

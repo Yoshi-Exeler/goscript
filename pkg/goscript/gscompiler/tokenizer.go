@@ -2,21 +2,54 @@ package gscompiler
 
 import "regexp"
 
-// list of primitive types available in goscript
-var PRIMITIVES = []string{"int8", "int16", "int32", "int64", "uint8", "uint16", "uint32", "uint64", "string", "char", "byte", "float32", "float64", "any"}
+// GSPrimitive is an enum of all primitives in goscript
+type GSPrimitive string
+
+const (
+	INT8    GSPrimitive = "int8"
+	INT16   GSPrimitive = "int16"
+	INT32   GSPrimitive = "int32"
+	INT64   GSPrimitive = "int64"
+	UINT8   GSPrimitive = "uint8"
+	UINT16  GSPrimitive = "uint16"
+	UINT32  GSPrimitive = "uint32"
+	UINT64  GSPrimitive = "uint64"
+	STRING  GSPrimitive = "string"
+	CHAR    GSPrimitive = "char"
+	BYTE    GSPrimitive = "byte"
+	FLOAT32 GSPrimitive = "float32"
+	FLOAT64 GSPrimitive = "float64"
+	ANY     GSPrimitive = "any"
+)
+
+// iterable list of all primitives
+var PRIMITIVES = [...]GSPrimitive{INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64, STRING, CHAR, BYTE, FLOAT32, FLOAT64, ANY}
 
 // regex that matches any symbol in goscript
 var SYMBOL = regexp.MustCompile(`(?m)[a-zA-Z_]{1}[a-zA-Z0-9_]*`)
+
+// regexes for all primitive literals
+var STRING_LITERAL = SIMPLE_STRING_REGEX
+var MULTILINE_STRING_LITERAL = MULTILINE_STRING_REGEX
+var INTEGER_LITERAL = regexp.MustCompile(`(?m)^\-?[0-9]+$`)
+var FLOAT_LITERAL = regexp.MustCompile(`(?m)^\-?[0-9]+\.{1}[0-9]+$`)
+var CHAR_LITERAL = regexp.MustCompile(`(?mU)'.{1}'`)
+var BOOLEAN_LITERAL = regexp.MustCompile(`(?m)^(?:true)?(?:false)?$`)
 
 // boolean constants
 const TRUE = "true"
 const FALSE = "false"
 
-func isPrimitive(expr string) bool {
+// isPrimitive checks if a token is a primitive
+func isPrimitive(token string) bool {
 	for _, primitive := range PRIMITIVES {
-		if expr == primitive {
+		if token == string(primitive) {
 			return true
 		}
 	}
 	return false
+}
+
+// Tokenizer holds all the context required during tokenization of goscript source code
+type Tokenizer struct {
 }

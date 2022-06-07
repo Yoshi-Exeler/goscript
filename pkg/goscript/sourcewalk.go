@@ -27,15 +27,21 @@ type ModuleSource struct {
 	Hash       string               // the hash uniquely identifying this module
 }
 
+type ImportDirective struct {
+	RootType     ModuleSourceRootType // which root path the module should be imported from
+	Name         string               // name of the module to be imported
+	RawDirective string               // the unprocessed directive
+	ImportPath   string               // the import path of the module without the root prefix
+}
+
 type SourceFile struct {
 	Path    string // path to the source file
 	Content string // content of the source file
 }
 
 type ApplicationSource struct {
-	Name            string         // application name
-	ApplicationFile string         // path to the main file
-	Modules         []ModuleSource // list of local and standard libarary modules
+	ApplicationFile SourceFile      // path to the main file
+	Modules         []*ModuleSource // list of local and standard libarary modules
 }
 
 // ExternalModuleSource will be used by the depgraph resolver to load this module
@@ -101,11 +107,14 @@ func getRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 // at the specified path  If a required external import is not present in the vendor directory,
 // this function will treat that as an error.
 func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
+	fmt.Println("[GSC] begin sourcewalk")
 	// get the external modules required by our app
 	dependencies, err := getRequiredExternals(mainPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required external modules with error %v", err)
 	}
+	fmt.Printf("[GSC] application requires %v direct external dependencies\n", len(dependencies))
+	fmt.Printf("[GSC] begin indexing. local=%v vendor=%v standard=%v\n", workspace, VENDORPATH, STDPATH)
 	// index the vendor directory
 	vendorIndex, err := indexModuleCollection(VENDORPATH, "ext")
 	if err != nil {
@@ -121,15 +130,154 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to index standard directory with error %v", err)
 	}
+	fmt.Printf("[GSC] finished indexing. local=%v vendor=%v standard=%v\n", len(localIndex), len(vendorIndex), len(standardIndex))
 	// now ensure all packages that the application uses actually exist locally
 	for _, dependency := range dependencies {
-		if vendorIndex[dependency.Name] == nil {
+		if vendorIndex["ext/"+dependency.Name] == nil {
 			return nil, fmt.Errorf("required external module %v not found", dependency.Name)
 		}
 	}
-	// TODO: expand module graph
-	fmt.Println(vendorIndex, localIndex, standardIndex)
-	return nil, nil
+	// resolve our dependencies
+	flatDeps, err := findMinimalResolution(mainPath, vendorIndex, localIndex, standardIndex)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve dependencies with error %v", err)
+	}
+	fmt.Println("[GSC] dependency graph resolution completed.")
+	for _, dep := range flatDeps {
+		fmt.Printf("[GSC]    %v\n", dep.ImportPath)
+	}
+	// grab the main file
+	mainContent, err := os.ReadFile(mainPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not read main application file with error %v", err)
+	}
+	// return the app source struct
+	return &ApplicationSource{
+		ApplicationFile: SourceFile{
+			Path:    mainPath,
+			Content: string(mainContent),
+		},
+		Modules: flatDeps,
+	}, nil
+}
+
+var IMPORT_REGEX = regexp.MustCompile(`(?m)import "(.*)"`)
+
+func getImportsFromSourceText(source string) ([]*ImportDirective, error) {
+	ret := []*ImportDirective{}
+	matches := IMPORT_REGEX.FindAllStringSubmatch(source, -1)
+	for _, match := range matches {
+		if len(match) != 2 {
+			return nil, fmt.Errorf("invalid match for import statement")
+		}
+		parts := strings.SplitN(match[1], "/", 2)
+		fullparts := strings.Split(match[1], "/")
+		rt := ModuleSourceRootType(0)
+		switch parts[0] {
+		case "loc":
+			rt = LOCAL
+		case "std":
+			rt = STANDARD
+		case "ext":
+			rt = VENDOR
+		default:
+			return nil, fmt.Errorf("unrecognized root type %v in import %v", parts[0], match[1])
+		}
+		ret = append(ret, &ImportDirective{
+			RootType:     rt,
+			Name:         fullparts[len(fullparts)-1],
+			RawDirective: match[1],
+			ImportPath:   parts[1],
+		})
+	}
+	return ret, nil
+}
+
+func findMinimalResolution(mainPath string, vendorIndex map[string]*ModuleSource, localIndex map[string]*ModuleSource, standardIndex map[string]*ModuleSource) ([]*ModuleSource, error) {
+	fmt.Println("[GSC] begin dependency graph resolution")
+	// read the main app file into memory
+	mainContent, err := os.ReadFile(mainPath)
+	if err != nil {
+		return nil, fmt.Errorf("could not read main application file with error %v", err)
+	}
+	// get the direct imports from main
+	directImports, err := getImportsFromSourceText(string(mainContent))
+	if err != nil {
+		return nil, fmt.Errorf("could not get imports from main application with error %v", err)
+	}
+	fmt.Printf("[GSC] main file has %v direct dependencies\n", len(directImports))
+	// resolve our direct dependencies
+	dependencies := []*ModuleSource{}
+	for _, directImport := range directImports {
+		// get the direct module reference
+		module, err := findModuleInIndices(directImport, vendorIndex, localIndex, standardIndex)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("[GSC] direct dependency %v resolved successfully, resolving transitive dependencies\n", module.ImportPath)
+		// resolve transitive dependencies
+		subModules, err := resolveUntilCompletion(module, vendorIndex, localIndex, standardIndex)
+		if err != nil {
+			return nil, err
+		}
+		dependencies = append(dependencies, subModules...)
+		fmt.Printf("[GSC] %v transitive dependencies of %v successfully resolved\n", len(subModules)-1, module.ImportPath)
+	}
+	return dependencies, nil
+}
+
+func resolveUntilCompletion(module *ModuleSource, vendorIndex map[string]*ModuleSource, localIndex map[string]*ModuleSource, standardIndex map[string]*ModuleSource) ([]*ModuleSource, error) {
+	// combine all the sources of this module
+	moduleBlob := ""
+	for _, sourceFile := range module.Files {
+		moduleBlob += sourceFile.Content
+	}
+	// get the imports of the current module
+	imports, err := getImportsFromSourceText(moduleBlob)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get imports from module %v", module.ImportPath)
+	}
+	// recursively resolve their dependencies
+	modules := []*ModuleSource{}
+	for _, imp := range imports {
+		// grab this module from our indices
+		module, err := findModuleInIndices(imp, vendorIndex, localIndex, standardIndex)
+		if err != nil {
+			return nil, err
+		}
+		subModules, err := resolveUntilCompletion(module, vendorIndex, localIndex, standardIndex)
+		if err != nil {
+			return nil, err
+		}
+		modules = append(modules, subModules...)
+	}
+	modules = append(modules, module)
+	return modules, nil
+}
+
+func findModuleInIndices(imp *ImportDirective, vendorIndex map[string]*ModuleSource, localIndex map[string]*ModuleSource, standardIndex map[string]*ModuleSource) (*ModuleSource, error) {
+	switch imp.RootType {
+	case LOCAL:
+		mod := localIndex["loc/"+imp.ImportPath]
+		if mod == nil {
+			return nil, fmt.Errorf("module %v not found in local workspace", imp.ImportPath)
+		}
+		return mod, nil
+	case STANDARD:
+		mod := standardIndex["std/"+imp.ImportPath]
+		if mod == nil {
+			return nil, fmt.Errorf("module %v not found in standard library", imp.ImportPath)
+		}
+		return mod, nil
+	case VENDOR:
+		mod := vendorIndex["ext/"+imp.ImportPath]
+		if mod == nil {
+			return nil, fmt.Errorf("module %v not found in vendor directory", imp.ImportPath)
+		}
+		return mod, nil
+	default:
+		return nil, fmt.Errorf("could not resolve import directive %v, unrecognized root directory", imp)
+	}
 }
 
 // indexModuleCollection will create an index of a module collection directory such as $VENDORPATH or the local path
@@ -193,6 +341,6 @@ func recAddModule(path string, importPath string, name string, out map[string]*M
 	// set the module hash
 	this.Hash = hex.EncodeToString(hash.Sum(nil))
 	// append the entry to the output list
-	out[name] = &this
+	out[importPath] = &this
 	return nil
 }

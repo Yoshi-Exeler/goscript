@@ -1,0 +1,9 @@
+List of all valid AST paths:
+if <boolean expression> {<open scope>}
+if <boolean expression>
+let <symbol>: <type> = <expression>
+func <symbol>(<symbol>: <type>, ...) {<open scope>}
+<symbol> = <expression>
+for let <symbol> = <numeric expression>; <boolean expression>; <symbol++||symbol--> {<open scope>}
+foreach let <symbol> in <iterable symbol> {<open scope>}
+<struct symbol>.<symbol>... = <expression>

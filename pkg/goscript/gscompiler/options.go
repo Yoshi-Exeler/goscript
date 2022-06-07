@@ -1,4 +1,4 @@
-package goscript
+package gscompiler
 
 // this package will be temporarily used during developement to have easy configuration
 

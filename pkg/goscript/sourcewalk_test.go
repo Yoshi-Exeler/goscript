@@ -12,7 +12,7 @@ func TestGetRequiredExternals(t *testing.T) {
 		t.Fatalf("got error %v", err)
 	}
 	if len(ret) != 1 {
-		t.Fatalf("expected one external but got %v", len(ret))
+		t.Fatalf("expected one externals but got %v", len(ret))
 	}
 	fmt.Printf("%+v\n", *ret[0])
 }

@@ -54,7 +54,7 @@ type ExternalModuleSource struct {
 
 var EXTERNAL_DIRECTIVE_REGEX = regexp.MustCompile(`(?mU)external ([a-zA-Z]*) from "(.*)"`)
 var VERSION_TAG_REGEX = regexp.MustCompile(`(?m)@version=([\^0-9\.]*)`)
-var BRNACH_TAG_REGEX = regexp.MustCompile(`(?m)@branch=([0-9a-zA-Z\.]*)`)
+var BRANCH_TAG_REGEX = regexp.MustCompile(`(?m)@branch=([0-9a-zA-Z\.]*)`)
 
 // GetRequiredExternals returns the list of all external modules required by the application at main path
 func getRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
@@ -63,6 +63,8 @@ func getRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read main application file from %v with error %v", mainPath, err)
 	}
+	// stip comments
+	content = []byte(stripComments(string(content)))
 	ret := []*ExternalModuleSource{}
 	// regex for our external definitions
 	matches := EXTERNAL_DIRECTIVE_REGEX.FindAllStringSubmatch(string(content), -1)
@@ -79,7 +81,7 @@ func getRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 			version = versionMatch[1]
 		}
 		// check for a branch tag
-		branchMatch := BRNACH_TAG_REGEX.FindStringSubmatch(match[2])
+		branchMatch := BRANCH_TAG_REGEX.FindStringSubmatch(match[2])
 		if len(branchMatch) == 2 {
 			branch = branchMatch[1]
 		}
@@ -151,6 +153,8 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read main application file with error %v", err)
 	}
+	// stip comments
+	mainContent = []byte(stripComments(string(mainContent)))
 	// return the app source struct
 	return &ApplicationSource{
 		ApplicationFile: SourceFile{
@@ -200,6 +204,8 @@ func findMinimalResolution(mainPath string, vendorIndex map[string]*ModuleSource
 	if err != nil {
 		return nil, fmt.Errorf("could not read main application file with error %v", err)
 	}
+	// stip comments
+	mainContent = []byte(stripComments(string(mainContent)))
 	// get the direct imports from main
 	directImports, err := getImportsFromSourceText(string(mainContent))
 	if err != nil {
@@ -330,6 +336,8 @@ func recAddModule(path string, importPath string, name string, out map[string]*M
 		if err != nil {
 			return fmt.Errorf("cannot read source file %v with error %v", filepath.Join(path, entry.Name()), err)
 		}
+		// stip comments
+		content = []byte(stripComments(string(content)))
 		// otherwise, we add this entry to the file list
 		this.Files = append(this.Files, SourceFile{
 			Path:    filepath.Join(path, entry.Name()),
@@ -343,4 +351,10 @@ func recAddModule(path string, importPath string, name string, out map[string]*M
 	// append the entry to the output list
 	out[importPath] = &this
 	return nil
+}
+
+var COMMENT_REGEX = regexp.MustCompile(`(?mU)^//.*`)
+
+func stripComments(soure string) string {
+	return COMMENT_REGEX.ReplaceAllString(soure, "")
 }

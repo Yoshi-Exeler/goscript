@@ -1,5 +1,7 @@
 package goscript
 
+// this package will be temporarily used during developement to have easy configuration
+
 var VENDORPATH = "../../vendor"
 
 var STDPATH = "../../standard"

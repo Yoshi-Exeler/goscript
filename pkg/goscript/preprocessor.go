@@ -47,7 +47,7 @@ func generateFQSC(source *ApplicationSource) (string, error) {
 			return "", fmt.Errorf("failed to fix references for module %v with error %v", mod.ImportPath, err)
 		}
 		mod.Content = fqsc
-		fmt.Printf("[GSC][genFQSC] module=%v fqsc:\n%v\n", mod.ImportPath, mod.Content)
+		fmt.Printf("[GSC][genFQSC] completed module %v\n", mod.ImportPath)
 	}
 	fmt.Println("[GSC][genFQSC] modules stripped, module symbols normalized")
 	fqsc, err := fixMainFileReferences(source.ApplicationFile.Content, &source.ApplicationFile, source.Modules)

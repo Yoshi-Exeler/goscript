@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type ModuleSourceRootType byte
@@ -113,6 +114,7 @@ func getRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 // at the specified path  If a required external import is not present in the vendor directory,
 // this function will treat that as an error.
 func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
+	start := time.Now()
 	fmt.Println("[GSC][sourceWalk] begin sourcewalk")
 	// get the external modules required by our app
 	dependencies, err := getRequiredExternals(mainPath)
@@ -178,6 +180,7 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 		alloc := *imp
 		src.ApplicationFile.Imports[imp.Alias] = &alloc
 	}
+	fmt.Printf("[GSC][STAGE_COMPLETION] sourcewalk completed in %s\n", time.Since(start))
 	// return the app source struct
 	return src, nil
 }

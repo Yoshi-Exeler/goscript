@@ -2,7 +2,9 @@ package goscript
 
 import (
 	"fmt"
+	"os"
 	"regexp"
+	"time"
 )
 
 // this package will contain the preprocessor for goscript
@@ -31,6 +33,7 @@ var MULTILINE_STRING_REGEX = regexp.MustCompile(`(?Us)\x60.*\x60`)
 	- merge all source files
 */
 func generateFQSC(source *ApplicationSource) (string, error) {
+	start := time.Now()
 	fmt.Println("[GSC][genFQSC] begin generation of fqsc, stripping directives and generating module blobs")
 	source.ApplicationFile.Content = stipDirectives(source.ApplicationFile.Content)
 	for _, mod := range source.Modules {
@@ -46,16 +49,23 @@ func generateFQSC(source *ApplicationSource) (string, error) {
 		mod.Content = fqsc
 		fmt.Printf("[GSC][genFQSC] module=%v fqsc:\n%v\n", mod.ImportPath, mod.Content)
 	}
+	fmt.Println("[GSC][genFQSC] modules stripped, module symbols normalized")
 	fqsc, err := fixMainFileReferences(source.ApplicationFile.Content, &source.ApplicationFile, source.Modules)
 	if err != nil {
 		return "", fmt.Errorf("failed to fix references for main file with error %v", err)
 	}
 	source.ApplicationFile.Content = fqsc
-	fmt.Println("[GSC][genFQSC] module blobs generated")
+	fmt.Println("[GSC][genFQSC] main stripped, main symbols normalized, merging now")
 	// now we just merge all the sources and return them
 	fullFQSC := source.ApplicationFile.Content
 	for _, mod := range source.Modules {
 		fullFQSC += "\n" + mod.Content + "\n"
+	}
+	fmt.Println("[GSC][genFQSC] blobs merged into FQSC successfully")
+	fmt.Printf("[GSC][STAGE_COMPLETION] fqsc generation completed in %s\n", time.Since(start))
+	// dump fqsc to a file if FQSC debugging is enabled
+	if DEBUG_DUMP_FQSC {
+		os.WriteFile("fqsc.gs", []byte(fullFQSC), 0600)
 	}
 	return fullFQSC, nil
 }

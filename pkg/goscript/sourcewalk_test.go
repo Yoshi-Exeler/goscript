@@ -1,7 +1,6 @@
 package goscript
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -14,13 +13,11 @@ func TestGetRequiredExternals(t *testing.T) {
 	if len(ret) != 1 {
 		t.Fatalf("expected one externals but got %v", len(ret))
 	}
-	fmt.Printf("%+v\n", *ret[0])
 }
 
 func TestSourceWalk(t *testing.T) {
-	ret, err := SourceWalk("../../tests/externals.gs", "../../tests/")
+	_, err := SourceWalk("../../tests/externals.gs", "../../tests/")
 	if err != nil {
 		t.Fatalf("got error %v", err)
 	}
-	fmt.Printf("%+v\n", ret)
 }

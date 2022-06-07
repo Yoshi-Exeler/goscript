@@ -1,7 +1,6 @@
 package goscript
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -10,9 +9,8 @@ func TestGenerateFQSC(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sourcewalk failed with error %v", err)
 	}
-	source, err := generateFQSC(ret)
+	_, err = generateFQSC(ret)
 	if err != nil {
 		t.Fatalf("fqsc generation failed with error %v", err)
 	}
-	fmt.Printf("%+v\n", source)
 }

@@ -178,7 +178,6 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 		alloc := *imp
 		src.ApplicationFile.Imports[imp.Alias] = &alloc
 	}
-	fmt.Println("IMPS:", src.ApplicationFile.Imports["db"])
 	// return the app source struct
 	return src, nil
 }

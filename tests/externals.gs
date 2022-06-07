@@ -11,15 +11,3 @@ func main() {
     let y: string = `db.Connect`
     db.Connect()
 }
-
-// this is another comment
-
-struct MyStruct {
-    A: string
-    B: int64
-    C: byte
-}
-
-func getMyStruct() => MyStruct {
-    return nil
-}

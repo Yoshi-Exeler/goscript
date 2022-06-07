@@ -52,8 +52,12 @@ func generateFQSC(source *ApplicationSource) (string, error) {
 	}
 	source.ApplicationFile.Content = fqsc
 	fmt.Println("[GSC][genFQSC] module blobs generated")
-	fmt.Println(source.ApplicationFile.Content)
-	return "", nil
+	// now we just merge all the sources and return them
+	fullFQSC := source.ApplicationFile.Content
+	for _, mod := range source.Modules {
+		fullFQSC += "\n" + mod.Content + "\n"
+	}
+	return fullFQSC, nil
 }
 
 var APPLICATION_REGEX = regexp.MustCompile(`(?m)application (.*)$`)
@@ -110,7 +114,6 @@ func fixMainFileReferences(source string, file *SourceFile, modules []*ModuleSou
 			return "", fmt.Errorf("symbol %v used but not imported", fullMatches[i][1])
 		}
 		// find the imported module in the module collection
-		fmt.Printf("%v\n", symbolImport.ImportPath)
 		var targetModule *ModuleSource
 		for _, mod := range modules {
 			alloc := *mod

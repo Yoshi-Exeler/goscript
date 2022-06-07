@@ -16,7 +16,7 @@ func TestGetRequiredExternals(t *testing.T) {
 }
 
 func TestSourceWalk(t *testing.T) {
-	_, err := SourceWalk("../../tests/externals.gs", "../../tests/")
+	_, err := DiscoverSources("../../tests/externals.gs", "../../tests/")
 	if err != nil {
 		t.Fatalf("got error %v", err)
 	}

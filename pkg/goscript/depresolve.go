@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
-func findMinimalResolution(mainPath string, vendorIndex map[string]*ModuleSource, localIndex map[string]*ModuleSource, standardIndex map[string]*ModuleSource) ([]*ModuleSource, error) {
-	fmt.Println("[GSC][sourceWalk] begin dependency graph resolution")
+func resolveDeps(mainPath string, vendorIndex map[string]*ModuleSource, localIndex map[string]*ModuleSource, standardIndex map[string]*ModuleSource) ([]*ModuleSource, error) {
+	start := time.Now()
+	fmt.Println("[GSC][resolveDeps] begin dependency graph resolution")
 	// read the main app file into memory
 	mainContent, err := os.ReadFile(mainPath)
 	if err != nil {
@@ -20,7 +22,7 @@ func findMinimalResolution(mainPath string, vendorIndex map[string]*ModuleSource
 	if err != nil {
 		return nil, fmt.Errorf("could not get imports from main application with error %v", err)
 	}
-	fmt.Printf("[GSC][sourceWalk] main file has %v direct dependencies\n", len(directImports))
+	fmt.Printf("[GSC][resolveDeps] main file has %v direct dependencies\n", len(directImports))
 	// resolve our direct dependencies
 	dependencies := []*ModuleSource{}
 	for _, directImport := range directImports {
@@ -29,14 +31,17 @@ func findMinimalResolution(mainPath string, vendorIndex map[string]*ModuleSource
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("[GSC][sourceWalk] direct dependency %v resolved successfully, resolving transitive dependencies\n", module.ImportPath)
 		// resolve transitive dependencies
 		subModules, err := resolveUntilCompletion(module, vendorIndex, localIndex, standardIndex)
 		if err != nil {
 			return nil, err
 		}
 		dependencies = append(dependencies, subModules...)
-		fmt.Printf("[GSC][sourceWalk] %v transitive dependencies of %v successfully resolved\n", len(subModules)-1, module.ImportPath)
+		fmt.Printf("[GSC][resolveDeps] module %v adds %v transitive dependencies\n", module.ImportPath, len(subModules)-1)
+	}
+	fmt.Printf("[GSC][STAGE_COMPLETED] resolveDeps completed in %s\n", time.Since(start))
+	for _, dep := range dependencies {
+		fmt.Printf("[GSC][resolveDeps]    %v\n", dep.ImportPath)
 	}
 	return dependencies, nil
 }

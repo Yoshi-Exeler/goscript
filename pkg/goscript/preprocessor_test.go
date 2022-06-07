@@ -5,7 +5,7 @@ import (
 )
 
 func TestGenerateFQSC(t *testing.T) {
-	ret, err := SourceWalk("../../tests/externals.gs", "../../tests/")
+	ret, err := DiscoverSources("../../tests/externals.gs", "../../tests/")
 	if err != nil {
 		t.Fatalf("sourcewalk failed with error %v", err)
 	}

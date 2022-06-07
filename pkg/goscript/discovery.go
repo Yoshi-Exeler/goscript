@@ -60,20 +60,20 @@ var EXTERNAL_DIRECTIVE_REGEX = regexp.MustCompile(`(?mU)external ([a-zA-Z]*) fro
 var VERSION_TAG_REGEX = regexp.MustCompile(`(?m)@version=([\^0-9\.]*)`)
 var BRANCH_TAG_REGEX = regexp.MustCompile(`(?m)@branch=([0-9a-zA-Z\.]*)`)
 
-// SourceWalk will discover source files and parse the imports required by the application
+// DiscoverSources will discover source files and parse the imports required by the application
 // at the specified path  If a required external import is not present in the vendor directory,
 // this function will treat that as an error.
-func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
+func DiscoverSources(mainPath string, workspace string) (*ApplicationSource, error) {
 	start := time.Now()
-	fmt.Println("[GSC][sourceWalk] begin sourcewalk")
+	fmt.Println("[GSC][discoverSources] begin discoverSources")
 	// get the external modules required by our app
 	dependencies, err := getRequiredExternals(mainPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required external modules with error %v", err)
 	}
-	fmt.Printf("[GSC][sourceWalk] application requires %v direct external dependencies\n", len(dependencies))
+	fmt.Printf("[GSC][discoverSources] application requires %v direct external dependencies\n", len(dependencies))
 	// TODO: call external dependency resolver here
-	fmt.Printf("[GSC][sourceWalk] begin indexing. local=%v vendor=%v standard=%v\n", workspace, VENDORPATH, STDPATH)
+	fmt.Printf("[GSC][discoverSources] begin indexing. local=%v vendor=%v standard=%v\n", workspace, VENDORPATH, STDPATH)
 	// index the vendor directory
 	vendorIndex, err := indexModuleCollection(VENDORPATH, "ext")
 	if err != nil {
@@ -89,7 +89,7 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to index standard directory with error %v", err)
 	}
-	fmt.Printf("[GSC][sourceWalk] finished indexing. local=%v vendor=%v standard=%v\n", len(localIndex), len(vendorIndex), len(standardIndex))
+	fmt.Printf("[GSC][discoverSources] finished indexing. local=%v vendor=%v standard=%v\n", len(localIndex), len(vendorIndex), len(standardIndex))
 	// now ensure all packages that the application uses actually exist locally
 	for _, dependency := range dependencies {
 		if vendorIndex["ext/"+dependency.Name] == nil {
@@ -97,14 +97,11 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 		}
 	}
 	// resolve our dependencies
-	flatDeps, err := findMinimalResolution(mainPath, vendorIndex, localIndex, standardIndex)
+	flatDeps, err := resolveDeps(mainPath, vendorIndex, localIndex, standardIndex)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve dependencies with error %v", err)
 	}
-	fmt.Println("[GSC][sourceWalk] dependency graph resolution completed.")
-	for _, dep := range flatDeps {
-		fmt.Printf("[GSC][sourceWalk]    %v\n", dep.ImportPath)
-	}
+
 	// grab the main file
 	mainContent, err := os.ReadFile(mainPath)
 	if err != nil {
@@ -130,7 +127,7 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 		alloc := *imp
 		src.ApplicationFile.Imports[imp.Alias] = &alloc
 	}
-	fmt.Printf("[GSC][STAGE_COMPLETION] sourcewalk completed in %s\n", time.Since(start))
+	fmt.Printf("[GSC][STAGE_COMPLETION] discoverSources completed in %s\n", time.Since(start))
 	// return the app source struct
 	return src, nil
 }

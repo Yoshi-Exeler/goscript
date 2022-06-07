@@ -1,5 +1,10 @@
 package goscript
 
+import (
+	"fmt"
+	"regexp"
+)
+
 // this package will contain the preprocessor for goscript
 
 /* generateFQSC will apply preprocessing steps to the applications source code
@@ -16,5 +21,23 @@ package goscript
 	- merge all source files
 */
 func generateFQSC(source *ApplicationSource) (string, error) {
+	fmt.Println("[GSC] begin generation of fqsc, stripping directives and generating module blobs")
+	source.ApplicationFile.Content = stipDirectives(source.ApplicationFile.Content)
+	for _, mod := range source.Modules {
+		for _, file := range mod.Files {
+			mod.Content += file.Content
+		}
+		mod.Content = stipDirectives(mod.Content)
+	}
+	fmt.Println("[GSC] module blobs generated")
 	return "", nil
+}
+
+var APPLICATION_REGEX = regexp.MustCompile(`(?m)application (.*)$`)
+
+func stipDirectives(source string) string {
+	stepOne := IMPORT_REGEX.ReplaceAllString(source, "")
+	stepTwo := APPLICATION_REGEX.ReplaceAllString(stepOne, "")
+	stepThree := EXTERNAL_DIRECTIVE_REGEX.ReplaceAllString(stepTwo, "")
+	return stepThree
 }

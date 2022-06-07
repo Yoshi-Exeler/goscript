@@ -25,6 +25,7 @@ type ModuleSource struct {
 	RootType   ModuleSourceRootType // type of the root this module can be found under
 	Files      []SourceFile         // paths to all the files in the module
 	Hash       string               // the hash uniquely identifying this module
+	Content    string               // merged content of all files (happens in preprocessor)
 }
 
 type ImportDirective struct {
@@ -353,7 +354,7 @@ func recAddModule(path string, importPath string, name string, out map[string]*M
 	return nil
 }
 
-var COMMENT_REGEX = regexp.MustCompile(`(?mU)^//.*`)
+var COMMENT_REGEX = regexp.MustCompile(`(?m)^//.*`)
 
 func stripComments(soure string) string {
 	return COMMENT_REGEX.ReplaceAllString(soure, "")

@@ -19,13 +19,14 @@ const (
 )
 
 type ModuleSource struct {
-	Name       string               // name of the module
-	Path       string               // actual path of the module relative to its root
-	ImportPath string               // the path using which this module can be imported (without its prefix)
-	RootType   ModuleSourceRootType // type of the root this module can be found under
-	Files      []SourceFile         // paths to all the files in the module
-	Hash       string               // the hash uniquely identifying this module
-	Content    string               // merged content of all files (happens in preprocessor)
+	Name       string                      // name of the module
+	Path       string                      // actual path of the module relative to its root
+	ImportPath string                      // the path using which this module can be imported (without its prefix)
+	RootType   ModuleSourceRootType        // type of the root this module can be found under
+	Files      []SourceFile                // paths to all the files in the module
+	Hash       string                      // the hash uniquely identifying this module
+	Content    string                      // merged content of all files (happens in preprocessor)
+	Imports    map[string]*ImportDirective // map of the aliased module name to the module import
 }
 
 type ImportDirective struct {
@@ -33,11 +34,13 @@ type ImportDirective struct {
 	Name         string               // name of the module to be imported
 	RawDirective string               // the unprocessed directive
 	ImportPath   string               // the import path of the module without the root prefix
+	Alias        string               // the alias in the import directive
 }
 
 type SourceFile struct {
-	Path    string // path to the source file
-	Content string // content of the source file
+	Path    string                      // path to the source file
+	Content string                      // content of the source file
+	Imports map[string]*ImportDirective // aliased imports only set in the main file
 }
 
 type ApplicationSource struct {
@@ -110,14 +113,14 @@ func getRequiredExternals(mainPath string) ([]*ExternalModuleSource, error) {
 // at the specified path  If a required external import is not present in the vendor directory,
 // this function will treat that as an error.
 func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
-	fmt.Println("[GSC] begin sourcewalk")
+	fmt.Println("[GSC][sourceWalk] begin sourcewalk")
 	// get the external modules required by our app
 	dependencies, err := getRequiredExternals(mainPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get required external modules with error %v", err)
 	}
-	fmt.Printf("[GSC] application requires %v direct external dependencies\n", len(dependencies))
-	fmt.Printf("[GSC] begin indexing. local=%v vendor=%v standard=%v\n", workspace, VENDORPATH, STDPATH)
+	fmt.Printf("[GSC][sourceWalk] application requires %v direct external dependencies\n", len(dependencies))
+	fmt.Printf("[GSC][sourceWalk] begin indexing. local=%v vendor=%v standard=%v\n", workspace, VENDORPATH, STDPATH)
 	// index the vendor directory
 	vendorIndex, err := indexModuleCollection(VENDORPATH, "ext")
 	if err != nil {
@@ -133,7 +136,7 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to index standard directory with error %v", err)
 	}
-	fmt.Printf("[GSC] finished indexing. local=%v vendor=%v standard=%v\n", len(localIndex), len(vendorIndex), len(standardIndex))
+	fmt.Printf("[GSC][sourceWalk] finished indexing. local=%v vendor=%v standard=%v\n", len(localIndex), len(vendorIndex), len(standardIndex))
 	// now ensure all packages that the application uses actually exist locally
 	for _, dependency := range dependencies {
 		if vendorIndex["ext/"+dependency.Name] == nil {
@@ -145,9 +148,9 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve dependencies with error %v", err)
 	}
-	fmt.Println("[GSC] dependency graph resolution completed.")
+	fmt.Println("[GSC][sourceWalk] dependency graph resolution completed.")
 	for _, dep := range flatDeps {
-		fmt.Printf("[GSC]    %v\n", dep.ImportPath)
+		fmt.Printf("[GSC][sourceWalk]    %v\n", dep.ImportPath)
 	}
 	// grab the main file
 	mainContent, err := os.ReadFile(mainPath)
@@ -166,7 +169,8 @@ func SourceWalk(mainPath string, workspace string) (*ApplicationSource, error) {
 	}, nil
 }
 
-var IMPORT_REGEX = regexp.MustCompile(`(?m)import "(.*)"`)
+var IMPORT_REGEX = regexp.MustCompile(`import "(.*)"\s*\n`)
+var IMPORT_ALIAS_REGEX = regexp.MustCompile(`import "(.*)" as (.*)`)
 
 func getImportsFromSourceText(source string) ([]*ImportDirective, error) {
 	ret := []*ImportDirective{}
@@ -193,13 +197,40 @@ func getImportsFromSourceText(source string) ([]*ImportDirective, error) {
 			Name:         fullparts[len(fullparts)-1],
 			RawDirective: match[1],
 			ImportPath:   parts[1],
+			Alias:        fullparts[len(fullparts)-1],
+		})
+	}
+	aliasMatches := IMPORT_ALIAS_REGEX.FindAllStringSubmatch(source, -1)
+	for _, match := range aliasMatches {
+		if len(match) != 2 {
+			return nil, fmt.Errorf("invalid match for import statement")
+		}
+		parts := strings.SplitN(match[1], "/", 2)
+		fullparts := strings.Split(match[1], "/")
+		rt := ModuleSourceRootType(0)
+		switch parts[0] {
+		case "loc":
+			rt = LOCAL
+		case "std":
+			rt = STANDARD
+		case "ext":
+			rt = VENDOR
+		default:
+			return nil, fmt.Errorf("unrecognized root type %v in import %v", parts[0], match[1])
+		}
+		ret = append(ret, &ImportDirective{
+			RootType:     rt,
+			Name:         fullparts[len(fullparts)-1],
+			RawDirective: match[1],
+			ImportPath:   parts[1],
+			Alias:        match[2],
 		})
 	}
 	return ret, nil
 }
 
 func findMinimalResolution(mainPath string, vendorIndex map[string]*ModuleSource, localIndex map[string]*ModuleSource, standardIndex map[string]*ModuleSource) ([]*ModuleSource, error) {
-	fmt.Println("[GSC] begin dependency graph resolution")
+	fmt.Println("[GSC][sourceWalk] begin dependency graph resolution")
 	// read the main app file into memory
 	mainContent, err := os.ReadFile(mainPath)
 	if err != nil {
@@ -212,7 +243,7 @@ func findMinimalResolution(mainPath string, vendorIndex map[string]*ModuleSource
 	if err != nil {
 		return nil, fmt.Errorf("could not get imports from main application with error %v", err)
 	}
-	fmt.Printf("[GSC] main file has %v direct dependencies\n", len(directImports))
+	fmt.Printf("[GSC][sourceWalk] main file has %v direct dependencies\n", len(directImports))
 	// resolve our direct dependencies
 	dependencies := []*ModuleSource{}
 	for _, directImport := range directImports {
@@ -221,14 +252,14 @@ func findMinimalResolution(mainPath string, vendorIndex map[string]*ModuleSource
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("[GSC] direct dependency %v resolved successfully, resolving transitive dependencies\n", module.ImportPath)
+		fmt.Printf("[GSC][sourceWalk] direct dependency %v resolved successfully, resolving transitive dependencies\n", module.ImportPath)
 		// resolve transitive dependencies
 		subModules, err := resolveUntilCompletion(module, vendorIndex, localIndex, standardIndex)
 		if err != nil {
 			return nil, err
 		}
 		dependencies = append(dependencies, subModules...)
-		fmt.Printf("[GSC] %v transitive dependencies of %v successfully resolved\n", len(subModules)-1, module.ImportPath)
+		fmt.Printf("[GSC][sourceWalk] %v transitive dependencies of %v successfully resolved\n", len(subModules)-1, module.ImportPath)
 	}
 	return dependencies, nil
 }
@@ -257,6 +288,8 @@ func resolveUntilCompletion(module *ModuleSource, vendorIndex map[string]*Module
 			return nil, err
 		}
 		modules = append(modules, subModules...)
+		// save this import in the module
+		module.Imports[imp.Alias] = imp
 	}
 	modules = append(modules, module)
 	return modules, nil

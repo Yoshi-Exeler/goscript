@@ -25,6 +25,30 @@ const (
 // iterable list of all primitives
 var PRIMITIVES = [...]GSPrimitive{INT8, INT16, INT32, INT64, UINT8, UINT16, UINT32, UINT64, STRING, CHAR, BYTE, FLOAT32, FLOAT64, ANY}
 
+type GSKeyword string
+
+const (
+	FOR     GSKeyword = "for"
+	FOREACH GSKeyword = "foreach"
+	LET     GSKeyword = "let"
+	FUNC    GSKeyword = "func"
+	RETURN  GSKeyword = "return"
+	STRUCT  GSKeyword = "struct"
+	CONST   GSKeyword = "const"
+	BREAK   GSKeyword = "break"
+	// these will be implemented once the compiler generally works
+	// EXPORTED GSKeyword = "exported"
+	// SWITCH   GSKeyword = "switch"
+	// CASE     GSKeyword = "case"
+	// DEFAULT  GSKeyword = "default"
+	// ASYNC    GSKeyword = "async"
+	// AWAIT    GSKeyword = "await"
+	// CONTINUE GSKeyword = "continue"
+)
+
+// iterable list of all keywords
+var KEYWORDS = [...]GSKeyword{FOR, FOREACH, LET, FUNC, RETURN, STRUCT, CONST, BREAK}
+
 // regex that matches any symbol in goscript
 var SYMBOL = regexp.MustCompile(`(?m)[a-zA-Z_]{1}[a-zA-Z0-9_]*`)
 

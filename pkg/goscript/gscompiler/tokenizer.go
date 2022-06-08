@@ -1,6 +1,9 @@
 package gscompiler
 
-import "regexp"
+import (
+	"regexp"
+	"strings"
+)
 
 // GSPrimitive is an enum of all primitives in goscript
 type GSPrimitive string
@@ -64,10 +67,44 @@ var BOOLEAN_LITERAL = regexp.MustCompile(`(?m)^(?:true)?(?:false)?$`)
 const TRUE = "true"
 const FALSE = "false"
 
+type SymbolKind byte
+
+const (
+	VSYMBOL  SymbolKind = 1
+	STSYMBOL SymbolKind = 2
+	FNSYMBOL SymbolKind = 3
+)
+
+// getSymbolKind returns the kind of the specified symbol, assuming it is guaranteed to be a symbol
+func getSymbolKind(symbol string) SymbolKind {
+	if strings.HasPrefix(symbol, "st_") {
+		return STSYMBOL
+	}
+	if strings.HasPrefix(symbol, "fn_") {
+		return FNSYMBOL
+	}
+	return VSYMBOL
+}
+
 // isPrimitive checks if a token is a primitive
 func isPrimitive(token string) bool {
 	for _, primitive := range PRIMITIVES {
 		if token == string(primitive) {
+			return true
+		}
+	}
+	return false
+}
+
+// isSymbol checks if a token is a symbol
+func isSymbol(token string) bool {
+	return SYMBOL.Match([]byte(token))
+}
+
+// isKeyword checks if a token is a keyword
+func isKeyword(token string) bool {
+	for _, keyword := range KEYWORDS {
+		if token == string(keyword) {
 			return true
 		}
 	}

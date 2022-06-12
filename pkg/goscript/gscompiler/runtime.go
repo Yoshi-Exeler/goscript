@@ -73,11 +73,47 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 		case RETURN_VALUE:
 			returnExpr := operation.Args[0].(*Expression)
 			return r.ResolveExpression(returnExpr)
+		case ENTER_LOOP:
+			r.execEnterLoop(operation)
+		case COUNT_LOOP_HEAD:
+			r.execCountLoopHead(operation)
+		case JUMP:
+			r.execJump(operation)
 		default:
 			panic(fmt.Sprintf("[GSR] runtime exception, invalid operation type %v", operation.Type))
 		}
 		r.ProgramCounter++
 	}
+}
+
+func (r *Runtime) execEnterLoop(operation *BinaryOperation) {
+	// enter a scope
+	r.enterScope()
+}
+
+func (r *Runtime) execJump(operation *BinaryOperation) {
+	// get the target address from arg0
+	targetPC := operation.Args[0].(int)
+	// jump to the target
+	r.ProgramCounter = targetPC
+}
+
+func (r *Runtime) execCountLoopHead(operation *BinaryOperation) {
+	// until the loop completes
+	for {
+		// check the loop condition saved in arg0
+		condition := operation.Args[0].(*Expression)
+		// resolve the condition
+		resolution := r.ResolveExpression(condition).Value.(bool)
+		// if the condition is false, we will exit here
+		if !resolution {
+			break
+		}
+	}
+	// exit the loop scope
+	r.exitScope()
+	// jump to the next instruction after the loop, saved in arg1
+	r.ProgramCounter = operation.Args[1].(int)
 }
 
 // execUntilReturn will keep executing instructions until a return is hit in the current scope, and then return the value passed to the return
@@ -99,6 +135,12 @@ func (r *Runtime) execUntilScopeClose() {
 			r.execFunctionOperation(operation)
 		case CLOSE_SCOPE:
 			return
+		case ENTER_LOOP:
+			r.execEnterLoop(operation)
+		case COUNT_LOOP_HEAD:
+			r.execCountLoopHead(operation)
+		case JUMP:
+			r.execJump(operation)
 		default:
 			panic(fmt.Sprintf("[GSR] runtime exception, invalid operation type %v", operation.Type))
 		}

@@ -13,7 +13,32 @@ const (
 	RETURN_VALUE            OperationType = 3 // return a value
 	CALL_FUNCTION           OperationType = 4 // just call a function
 	CLOSE_SCOPE             OperationType = 5 // closing bracket of a scope
+	ENTER_LOOP              OperationType = 6 // enters a loop
+	COUNT_LOOP_HEAD         OperationType = 7 // head of a count loop
+	FOREACH_LOOP_HEAD       OperationType = 8 // head of a foreach loop
+	JUMP                    OperationType = 9 // jumps to the address in arg0
 )
+
+/*
+	Foreach Loop structure
+	0 ENTER_LOOP
+	1 FOREACH_LOOP_HEAD
+	2 ASSIGN_EXPRESSION index = $IDX
+	3 ASSIGN_EXPRESSION value = $V
+	... actual loop content ...
+	8 JUMP 1
+*/
+
+/*
+	Count Loop structure
+	0 ENTER_LOOP
+	1 ASSIGN_EXPRESSION loopVar = initial value
+	2 COUNT_LOOP_HEAD loopVar < 5
+	3 ASSIGN_EXPRESSION loopVar++
+	... actual loop content ...
+	8 JUMP 2
+	9
+*/
 
 type BinaryOperation struct {
 	Type OperationType // which operation should be performed

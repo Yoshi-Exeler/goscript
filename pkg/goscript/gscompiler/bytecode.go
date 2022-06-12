@@ -10,12 +10,46 @@ const (
 	RETURN_VALUE            OperationType = 3 // return a value
 	CALL_FUNCTION           OperationType = 4 // just call a function
 	CLOSE_SCOPE             OperationType = 5 // closing bracket of a scope
-	CALL_BUILTIN            OperationType = 6 // calls a builtin function (go binding)
 )
 
 type BinaryOperation struct {
 	Type OperationType // which operation should be performed
 	Args []any         // the arguments passed to the operation
+}
+
+func NewCloseScopeOp() *BinaryOperation {
+	return &BinaryOperation{
+		Type: CLOSE_SCOPE,
+		Args: []any{},
+	}
+}
+
+func NewAssignExpressionOp(symbolRef int, expression *Expression) *BinaryOperation {
+	return &BinaryOperation{
+		Type: ASSIGN_EXPRESSION,
+		Args: []any{symbolRef, expression},
+	}
+}
+
+func NewConditionalBlockEnterOp(condition *Expression, ifBlockPC int, nextOpPC int, elseBlockPC int) *BinaryOperation {
+	return &BinaryOperation{
+		Type: CONDITIONAL_BLOCK_ENTER,
+		Args: []any{condition, ifBlockPC, nextOpPC, elseBlockPC},
+	}
+}
+
+func NewReturnValueOp(value *Expression) *BinaryOperation {
+	return &BinaryOperation{
+		Type: RETURN_VALUE,
+		Args: []any{value},
+	}
+}
+
+func NewCallFunctionOp(functionExpression *Expression) *BinaryOperation {
+	return &BinaryOperation{
+		Type: CALL_FUNCTION,
+		Args: []any{functionExpression},
+	}
 }
 
 type BinaryType byte

@@ -83,7 +83,8 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 		case CALL_FUNCTION:
 			r.execFunctionOperation(operation)
 		case RETURN_VALUE:
-			return operation.Args[0].(*BinaryTypedValue)
+			returnExpr := operation.Args[0].(*Expression)
+			return r.ResolveExpression(returnExpr)
 		default:
 			panic(fmt.Sprintf("[GSR] runtime exception, invalid operation type %v", operation.Type))
 		}

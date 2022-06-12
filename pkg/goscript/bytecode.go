@@ -10,65 +10,76 @@ type Program struct {
 type OperationType byte
 
 const (
-	ASSIGN_EXPRESSION       OperationType = 1 // assign an expression resolution to a symbol
-	CONDITIONAL_BLOCK_ENTER OperationType = 2 // conditional entry into a block (if-else constructs)
-	RETURN_VALUE            OperationType = 3 // return a value
-	CALL_FUNCTION           OperationType = 4 // just call a function
-	CLOSE_SCOPE             OperationType = 5 // closing bracket of a scope
-	ENTER_LOOP              OperationType = 6 // enters a loop
-	COUNT_LOOP_HEAD         OperationType = 7 // head of a count loop
-	FOREACH_LOOP_HEAD       OperationType = 8 // head of a foreach loop
-	JUMP                    OperationType = 9 // jumps to the address in arg0
+	ASSIGN      OperationType = 1 // assign an expression resolution to a symbol
+	RETURN      OperationType = 3 // return a value
+	CALL        OperationType = 4 // call a function without assigning its return value to anything
+	ENTER_SCOPE OperationType = 5 // enters a a new scope
+	EXIT_SCOPE  OperationType = 9 // exits the current scope
+	JUMP        OperationType = 8 // jumps to the address in arg0
+	JUMP_IF     OperationType = 6 // jumps to the address in arg1 if the condition in arg0 is true
+	JUMP_IF_NOT OperationType = 7 // jumps to the address in arg1 if the condition in arg0 is false
 )
 
 /*
-	Foreach Loop structure
-	0 ENTER_LOOP
-	1 FOREACH_LOOP_HEAD
-	2 ASSIGN_EXPRESSION index = $IDX
-	3 ASSIGN_EXPRESSION value = $V
-	... actual loop content ...
-	8 JUMP 1
+	Count Loop Snippet
+	0 ENTER_SCOPE                    # enter the loop scope
+	1 ASSIGN_EXPRESSION 1 CONST(0)   # i := 0
+	2 JUMP_IF_NOT 1 < 10 5           # i < 10, if false jump to 5, exiting the loop
+	3 ASSIGN_EXPRESSION 1++          # i++
+	... actual loop content ...      # do some stuff
+	4 JUMP 2                         # go back to the loop head
+	5 EXIT_SCOPE                     # exit the loop scope
 */
 
 /*
-	Count Loop structure
-	0 ENTER_LOOP
-	1 ASSIGN_EXPRESSION loopVar = initial value
-	2 COUNT_LOOP_HEAD loopVar < 5
-	3 ASSIGN_EXPRESSION loopVar++
-	... actual loop content ...
-	8 JUMP 2
-	9
+	If condition Snippet
+	0 JUMP_IF_NOT VS(1) > 10 3         # check the if condition, jump over the block if its false
+	1 ENTER_SCOPE                      # enter our scope
+	... if block content ...           # do some stuff
+	2 EXIT_SCOPE                       # exit our scope
+	3 ... some next instruction ...
+*/
+
+/*
+	if else snippet
+	0 ENTER_SCOPE                     # in an if-else, we will definetly enter a block
+	1 JUMP_IF_NOT VS(1) > 10 5        # check for the else case, if the main condition is not true, we jump into the else block
+	2... if block content ...         # do the stuff for the if branch
+	4 JUMP 6                          # jump onto the exit scope at the end
+	5... else block content ...       # do the stuff for the else branch
+	6 EXIT_SCOPE                      # exit the current scope
+	7 ... some next instruction ...
 */
 
 func (p *Program) String() string {
 	ret := fmt.Sprintf("BEGIN PROGRAM, %v SYMBOLS\n", len(p.Operations))
 	for pc, op := range p.Operations {
-		switch op.Type {
-		case ASSIGN_EXPRESSION:
-			ret += fmt.Sprintf("[%v] ASSIGN_EXPRESSION %v %v\n", pc, op.Args[0], op.Args[1].(*Expression))
-		case CONDITIONAL_BLOCK_ENTER:
-			ret += fmt.Sprintf("[%v] CONDITIONAL_BLOCK_ENTER %v %v %v %v\n", pc, op.Args[0].(*Expression), op.Args[1].(int), op.Args[2].(int), op.Args[3].(int))
-		case RETURN_VALUE:
-			ret += fmt.Sprintf("[%v] RETURN_VALUE %v\n", pc, op.Args[0].(*Expression))
-		case CALL_FUNCTION:
-			ret += fmt.Sprintf("[%v] CALL_FUNCTION %v\n", pc, op.Args[0].(*Expression))
-		case CLOSE_SCOPE:
-			ret += fmt.Sprintf("[%v] CLOSE_SCOPE\n", pc)
-		case ENTER_LOOP:
-			ret += fmt.Sprintf("[%v] ENTER_LOOP\n", pc)
-		case COUNT_LOOP_HEAD:
-			ret += fmt.Sprintf("[%v] COUNT_LOOP_HEAD %v %v\n", pc, op.Args[0].(*Expression), op.Args[1].(int))
-		case FOREACH_LOOP_HEAD:
-			ret += fmt.Sprintf("[%v] FOREACH_LOOP_HEAD\n", pc)
-		case JUMP:
-			ret += fmt.Sprintf("[%v] JUMP %v\n", pc, op.Args[0].(int))
-		default:
-			ret += "INVALID OP"
-		}
+		ret += fmt.Sprintf("[%v] %v\n", pc, op.String())
 	}
 	return ret
+}
+
+func (b *BinaryOperation) String() string {
+	switch b.Type {
+	case ASSIGN:
+		return fmt.Sprintf("ASSIGN %v %v", b.Args[0], b.Args[1].(*Expression))
+	case RETURN:
+		return fmt.Sprintf("RETURN %v", b.Args[0].(*Expression))
+	case CALL:
+		return fmt.Sprintf("CALL %v", b.Args[0].(*Expression))
+	case ENTER_SCOPE:
+		return fmt.Sprintf("ENTER_SCOPE")
+	case EXIT_SCOPE:
+		return fmt.Sprintf("EXIT_SCOPE")
+	case JUMP:
+		return fmt.Sprintf("JUMP %v", b.Args[0].(int))
+	case JUMP_IF:
+		return fmt.Sprintf("JUMP_IF %v %v", b.Args[0].(*Expression), b.Args[1].(int))
+	case JUMP_IF_NOT:
+		return fmt.Sprintf("JUMP_IF_NOT %v %v", b.Args[0].(*Expression), b.Args[1].(int))
+	default:
+		return "INVALID OP"
+	}
 }
 
 type BinaryOperation struct {
@@ -76,37 +87,58 @@ type BinaryOperation struct {
 	Args []any         // the arguments passed to the operation
 }
 
-func NewCloseScopeOp() *BinaryOperation {
-	return &BinaryOperation{
-		Type: CLOSE_SCOPE,
-		Args: []any{},
-	}
-}
-
-func NewAssignExpressionOp(symbolRef int, expression *Expression) *BinaryOperation {
-	return &BinaryOperation{
-		Type: ASSIGN_EXPRESSION,
+func NewAssignExpressionOp(symbolRef int, expression *Expression) BinaryOperation {
+	return BinaryOperation{
+		Type: ASSIGN,
 		Args: []any{symbolRef, expression},
 	}
 }
 
-func NewConditionalBlockEnterOp(condition *Expression, ifBlockPC int, nextOpPC int, elseBlockPC int) *BinaryOperation {
-	return &BinaryOperation{
-		Type: CONDITIONAL_BLOCK_ENTER,
-		Args: []any{condition, ifBlockPC, nextOpPC, elseBlockPC},
+func NewEnterScope() BinaryOperation {
+	return BinaryOperation{
+		Type: ENTER_SCOPE,
+		Args: []any{},
 	}
 }
 
-func NewReturnValueOp(value *Expression) *BinaryOperation {
-	return &BinaryOperation{
-		Type: RETURN_VALUE,
+func NewExitScopeOp() BinaryOperation {
+	return BinaryOperation{
+		Type: EXIT_SCOPE,
+		Args: []any{},
+	}
+}
+
+func NewJumpOp(target int) BinaryOperation {
+	return BinaryOperation{
+		Type: JUMP,
+		Args: []any{target - 1},
+	}
+}
+
+func NewJumpIfOp(target int, condition *Expression) BinaryOperation {
+	return BinaryOperation{
+		Type: JUMP_IF,
+		Args: []any{condition, target - 1},
+	}
+}
+
+func NewJumpIfNotOp(target int, condition *Expression) BinaryOperation {
+	return BinaryOperation{
+		Type: JUMP_IF_NOT,
+		Args: []any{condition, target - 1},
+	}
+}
+
+func NewReturnValueOp(value *Expression) BinaryOperation {
+	return BinaryOperation{
+		Type: RETURN,
 		Args: []any{value},
 	}
 }
 
-func NewCallFunctionOp(functionExpression *Expression) *BinaryOperation {
-	return &BinaryOperation{
-		Type: CALL_FUNCTION,
+func NewCallFunctionOp(functionExpression *Expression) BinaryOperation {
+	return BinaryOperation{
+		Type: CALL,
 		Args: []any{functionExpression},
 	}
 }
@@ -129,6 +161,7 @@ const (
 	BT_FLOAT64 BinaryType = 13
 	BT_ANY     BinaryType = 14
 	BT_STRUCT  BinaryType = 15
+	BT_BOOLEAN BinaryType = 16
 )
 
 type BinarySymbol struct {
@@ -144,13 +177,18 @@ type BinaryFunctionCall struct {
 type BinaryOperator byte
 
 const (
-	BO_CONSTANT      BinaryOperator = 1
-	BO_PLUS          BinaryOperator = 2
-	BO_MINUS         BinaryOperator = 3
-	BO_MULTIPLY      BinaryOperator = 4
-	BO_DIVIDE        BinaryOperator = 5
-	BO_FUNCTION_CALL BinaryOperator = 6 // represents a function that returns a constant
-	BO_VSYMBOL       BinaryOperator = 7
+	BO_CONSTANT       BinaryOperator = 1
+	BO_PLUS           BinaryOperator = 2
+	BO_MINUS          BinaryOperator = 3
+	BO_MULTIPLY       BinaryOperator = 4
+	BO_DIVIDE         BinaryOperator = 5
+	BO_FUNCTION_CALL  BinaryOperator = 6 // represents a function that returns a constant
+	BO_VSYMBOL        BinaryOperator = 7
+	BO_EQUALS         BinaryOperator = 8
+	BO_GREATER        BinaryOperator = 9
+	BO_LESSER         BinaryOperator = 10
+	BO_GREATER_EQUALS BinaryOperator = 11
+	BO_LESSER_EQUALS  BinaryOperator = 12
 )
 
 type BuiltinFunction byte

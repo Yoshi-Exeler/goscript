@@ -2,6 +2,7 @@ package goscript
 
 import (
 	"fmt"
+	"time"
 )
 
 func NewRuntime() *Runtime {
@@ -57,28 +58,32 @@ func (r *Runtime) Exec(program Program) any {
 func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 	for {
 		// check if there are more instructions
-		if r.ProgramCounter == len(r.SymbolTable)-1 {
+		if r.ProgramCounter == len(r.Program.Operations) {
 			return nil
 		}
 		// fetch the next operation from the program
 		operation := &r.Program.Operations[r.ProgramCounter]
+		fmt.Printf("[%v] %v\n", r.ProgramCounter, operation.String())
+		time.Sleep(time.Millisecond * 50)
 		// call the operation handler for this operation type
 		switch operation.Type {
-		case ASSIGN_EXPRESSION:
+		case ASSIGN:
 			r.execAssignExpression(operation)
-		case CONDITIONAL_BLOCK_ENTER:
-			r.execConditionalBlockEnter(operation)
-		case CALL_FUNCTION:
+		case CALL:
 			r.execFunctionOperation(operation)
-		case RETURN_VALUE:
+		case RETURN:
 			returnExpr := operation.Args[0].(*Expression)
 			return r.ResolveExpression(returnExpr)
-		case ENTER_LOOP:
-			r.execEnterLoop(operation)
-		case COUNT_LOOP_HEAD:
-			r.execCountLoopHead(operation)
+		case ENTER_SCOPE:
+			r.enterScope()
+		case EXIT_SCOPE:
+			r.enterScope()
 		case JUMP:
 			r.execJump(operation)
+		case JUMP_IF:
+			r.execJumpIf(operation)
+		case JUMP_IF_NOT:
+			r.execJumpIfNot(operation)
 		default:
 			panic(fmt.Sprintf("[GSR] runtime exception, invalid operation type %v", operation.Type))
 		}
@@ -86,9 +91,32 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 	}
 }
 
-func (r *Runtime) execEnterLoop(operation *BinaryOperation) {
-	// enter a scope
-	r.enterScope()
+func (r *Runtime) execJumpIf(operation *BinaryOperation) {
+	// get the expression from arg0
+	condition := operation.Args[0].(*Expression)
+	// resolve the expressions
+	resolution := r.ResolveExpression(condition).Value.(bool)
+	// if the condition is true, we jump
+	if resolution {
+		// get the target address from arg1
+		targetPC := operation.Args[1].(int)
+		// jump to the target
+		r.ProgramCounter = targetPC
+	}
+}
+
+func (r *Runtime) execJumpIfNot(operation *BinaryOperation) {
+	// get the expression from arg0
+	condition := operation.Args[0].(*Expression)
+	// resolve the expressions
+	resolution := r.ResolveExpression(condition).Value.(bool)
+	// if the condition is true, we jump
+	if !resolution {
+		// get the target address from arg1
+		targetPC := operation.Args[1].(int)
+		// jump to the target
+		r.ProgramCounter = targetPC
+	}
 }
 
 func (r *Runtime) execJump(operation *BinaryOperation) {
@@ -96,56 +124,6 @@ func (r *Runtime) execJump(operation *BinaryOperation) {
 	targetPC := operation.Args[0].(int)
 	// jump to the target
 	r.ProgramCounter = targetPC
-}
-
-func (r *Runtime) execCountLoopHead(operation *BinaryOperation) {
-	// until the loop completes
-	for {
-		// check the loop condition saved in arg0
-		condition := operation.Args[0].(*Expression)
-		// resolve the condition
-		resolution := r.ResolveExpression(condition).Value.(bool)
-		// if the condition is false, we will exit here
-		if !resolution {
-			break
-		}
-	}
-	// exit the loop scope
-	r.exitScope()
-	// jump to the next instruction after the loop, saved in arg1
-	r.ProgramCounter = operation.Args[1].(int)
-}
-
-// execUntilReturn will keep executing instructions until a return is hit in the current scope, and then return the value passed to the return
-func (r *Runtime) execUntilScopeClose() {
-	for {
-		// check if there are more instructions
-		if r.ProgramCounter == len(r.SymbolTable)-1 {
-			return
-		}
-		// fetch the next operation from the program
-		operation := &r.Program.Operations[r.ProgramCounter]
-		// call the operation handler for this operation type
-		switch operation.Type {
-		case ASSIGN_EXPRESSION:
-			r.execAssignExpression(operation)
-		case CONDITIONAL_BLOCK_ENTER:
-			r.execConditionalBlockEnter(operation)
-		case CALL_FUNCTION:
-			r.execFunctionOperation(operation)
-		case CLOSE_SCOPE:
-			return
-		case ENTER_LOOP:
-			r.execEnterLoop(operation)
-		case COUNT_LOOP_HEAD:
-			r.execCountLoopHead(operation)
-		case JUMP:
-			r.execJump(operation)
-		default:
-			panic(fmt.Sprintf("[GSR] runtime exception, invalid operation type %v", operation.Type))
-		}
-		r.ProgramCounter++
-	}
 }
 
 // execFunctionOperation is a wrapper that runs a function call
@@ -163,53 +141,6 @@ func (r *Runtime) execAssignExpression(operation *BinaryOperation) {
 	resolution := r.ResolveExpression(expression)
 	// assign the resolution to the referenced symbol
 	r.SymbolTable[symbolRef] = resolution
-}
-
-func (r *Runtime) execConditionalBlockEnter(operation *BinaryOperation) {
-	// get the conditional expression from arg0
-	condition := operation.Args[0].(*Expression)
-	// resolve the expression
-	resolution := r.ResolveExpression(condition).Value.(bool)
-	// if the condition resolved to true, we should enter the if branch
-	if resolution {
-		// get the main branch entry pc from arg1
-		blockPC := operation.Args[1].(int)
-		// jump to the block pc
-		r.ProgramCounter = blockPC
-		// enter a new scope
-		r.enterScope()
-		// execute until this scope completes
-		r.execUntilScopeClose()
-		// exit the scope
-		r.exitScope()
-		// get the post condition pc from arg2
-		nextPC := operation.Args[2].(int)
-		// jump to the next 'real' instruction
-		r.ProgramCounter = nextPC
-		return
-	}
-	// check if there is an else block pc in arg3
-	elsePC, ok := operation.Args[3].(int)
-	if !ok || elsePC == 0 {
-		// if there is no else block pc we just jump to the next real address and exit
-		// get the post condition pc from arg2
-		nextPC := operation.Args[2].(int)
-		// jump to the next 'real' instruction
-		r.ProgramCounter = nextPC
-		return
-	}
-	// if there is a valid else block pc, jump into it
-	r.ProgramCounter = elsePC
-	// enter a new scope
-	r.enterScope()
-	// execute until this scope completes
-	r.execUntilScopeClose()
-	// exit the scope
-	r.exitScope()
-	// get the post condition pc from arg2
-	nextPC := operation.Args[2].(int)
-	// jump to the next 'real' instruction
-	r.ProgramCounter = nextPC
 }
 
 func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
@@ -263,254 +194,6 @@ func (r *Runtime) execFunctionExpression(e *Expression) *BinaryTypedValue {
 	// return to the original place in the code
 	r.ProgramCounter = returnPC
 	return value
-}
-
-// applyOperator applies the specified operator to the specified values, assuming that the operation has been type checked before
-func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator) *BinaryTypedValue {
-	switch op {
-	case BO_PLUS:
-		switch l.Type {
-		case BT_INT8:
-			return &BinaryTypedValue{
-				Type:  BT_INT8,
-				Value: genericPlus[int8](l.Value, r.Value),
-			}
-		case BT_INT16:
-			return &BinaryTypedValue{
-				Type:  BT_INT16,
-				Value: genericPlus[int16](l.Value, r.Value),
-			}
-		case BT_INT32:
-			return &BinaryTypedValue{
-				Type:  BT_INT32,
-				Value: genericPlus[int32](l.Value, r.Value),
-			}
-		case BT_INT64:
-			return &BinaryTypedValue{
-				Type:  BT_INT64,
-				Value: genericPlus[int64](l.Value, r.Value),
-			}
-		case BT_UINT8:
-			return &BinaryTypedValue{
-				Type:  BT_UINT8,
-				Value: genericPlus[uint8](l.Value, r.Value),
-			}
-		case BT_UINT16:
-			return &BinaryTypedValue{
-				Type:  BT_UINT16,
-				Value: genericPlus[uint16](l.Value, r.Value),
-			}
-		case BT_UINT32:
-			return &BinaryTypedValue{
-				Type:  BT_UINT32,
-				Value: genericPlus[uint32](l.Value, r.Value),
-			}
-		case BT_UINT64:
-			return &BinaryTypedValue{
-				Type:  BT_UINT64,
-				Value: genericPlus[uint64](l.Value, r.Value),
-			}
-		case BT_BYTE:
-			return &BinaryTypedValue{
-				Type:  BT_BYTE,
-				Value: genericPlus[byte](l.Value, r.Value),
-			}
-		case BT_FLOAT32:
-			return &BinaryTypedValue{
-				Type:  BT_FLOAT32,
-				Value: genericPlus[float32](l.Value, r.Value),
-			}
-		case BT_FLOAT64:
-			return &BinaryTypedValue{
-				Type:  BT_FLOAT64,
-				Value: genericPlus[float64](l.Value, r.Value),
-			}
-		default:
-			panic("invalid type for plus operator")
-		}
-	case BO_MINUS:
-		switch l.Type {
-		case BT_INT8:
-			return &BinaryTypedValue{
-				Type:  BT_INT8,
-				Value: genericMinus[int8](l.Value, r.Value),
-			}
-		case BT_INT16:
-			return &BinaryTypedValue{
-				Type:  BT_INT16,
-				Value: genericMinus[int16](l.Value, r.Value),
-			}
-		case BT_INT32:
-			return &BinaryTypedValue{
-				Type:  BT_INT32,
-				Value: genericMinus[int32](l.Value, r.Value),
-			}
-		case BT_INT64:
-			return &BinaryTypedValue{
-				Type:  BT_INT64,
-				Value: genericMinus[int64](l.Value, r.Value),
-			}
-		case BT_UINT8:
-			return &BinaryTypedValue{
-				Type:  BT_UINT8,
-				Value: genericMinus[uint8](l.Value, r.Value),
-			}
-		case BT_UINT16:
-			return &BinaryTypedValue{
-				Type:  BT_UINT16,
-				Value: genericMinus[uint16](l.Value, r.Value),
-			}
-		case BT_UINT32:
-			return &BinaryTypedValue{
-				Type:  BT_UINT32,
-				Value: genericMinus[uint32](l.Value, r.Value),
-			}
-		case BT_UINT64:
-			return &BinaryTypedValue{
-				Type:  BT_UINT64,
-				Value: genericMinus[uint64](l.Value, r.Value),
-			}
-		case BT_BYTE:
-			return &BinaryTypedValue{
-				Type:  BT_BYTE,
-				Value: genericMinus[byte](l.Value, r.Value),
-			}
-		case BT_FLOAT32:
-			return &BinaryTypedValue{
-				Type:  BT_FLOAT32,
-				Value: genericMinus[float32](l.Value, r.Value),
-			}
-		case BT_FLOAT64:
-			return &BinaryTypedValue{
-				Type:  BT_FLOAT64,
-				Value: genericMinus[float64](l.Value, r.Value),
-			}
-		default:
-			panic("invalid type for minus operator")
-		}
-	case BO_MULTIPLY:
-		switch l.Type {
-		case BT_INT8:
-			return &BinaryTypedValue{
-				Type:  BT_INT8,
-				Value: genericMultiply[int8](l.Value, r.Value),
-			}
-		case BT_INT16:
-			return &BinaryTypedValue{
-				Type:  BT_INT16,
-				Value: genericMultiply[int16](l.Value, r.Value),
-			}
-		case BT_INT32:
-			return &BinaryTypedValue{
-				Type:  BT_INT32,
-				Value: genericMultiply[int32](l.Value, r.Value),
-			}
-		case BT_INT64:
-			return &BinaryTypedValue{
-				Type:  BT_INT64,
-				Value: genericMultiply[int64](l.Value, r.Value),
-			}
-		case BT_UINT8:
-			return &BinaryTypedValue{
-				Type:  BT_UINT8,
-				Value: genericMultiply[uint8](l.Value, r.Value),
-			}
-		case BT_UINT16:
-			return &BinaryTypedValue{
-				Type:  BT_UINT16,
-				Value: genericMultiply[uint16](l.Value, r.Value),
-			}
-		case BT_UINT32:
-			return &BinaryTypedValue{
-				Type:  BT_UINT32,
-				Value: genericMultiply[uint32](l.Value, r.Value),
-			}
-		case BT_UINT64:
-			return &BinaryTypedValue{
-				Type:  BT_UINT64,
-				Value: genericMultiply[uint64](l.Value, r.Value),
-			}
-		case BT_BYTE:
-			return &BinaryTypedValue{
-				Type:  BT_BYTE,
-				Value: genericMultiply[byte](l.Value, r.Value),
-			}
-		case BT_FLOAT32:
-			return &BinaryTypedValue{
-				Type:  BT_FLOAT32,
-				Value: genericMultiply[float32](l.Value, r.Value),
-			}
-		case BT_FLOAT64:
-			return &BinaryTypedValue{
-				Type:  BT_FLOAT64,
-				Value: genericMultiply[float64](l.Value, r.Value),
-			}
-		default:
-			panic("invalid type for multiply operator")
-		}
-	case BO_DIVIDE:
-		switch l.Type {
-		case BT_INT8:
-			return &BinaryTypedValue{
-				Type:  BT_INT8,
-				Value: genericDivide[int8](l.Value, r.Value),
-			}
-		case BT_INT16:
-			return &BinaryTypedValue{
-				Type:  BT_INT16,
-				Value: genericDivide[int16](l.Value, r.Value),
-			}
-		case BT_INT32:
-			return &BinaryTypedValue{
-				Type:  BT_INT32,
-				Value: genericDivide[int32](l.Value, r.Value),
-			}
-		case BT_INT64:
-			return &BinaryTypedValue{
-				Type:  BT_INT64,
-				Value: genericDivide[int64](l.Value, r.Value),
-			}
-		case BT_UINT8:
-			return &BinaryTypedValue{
-				Type:  BT_UINT8,
-				Value: genericDivide[uint8](l.Value, r.Value),
-			}
-		case BT_UINT16:
-			return &BinaryTypedValue{
-				Type:  BT_UINT16,
-				Value: genericDivide[uint16](l.Value, r.Value),
-			}
-		case BT_UINT32:
-			return &BinaryTypedValue{
-				Type:  BT_UINT32,
-				Value: genericDivide[uint32](l.Value, r.Value),
-			}
-		case BT_UINT64:
-			return &BinaryTypedValue{
-				Type:  BT_UINT64,
-				Value: genericDivide[uint64](l.Value, r.Value),
-			}
-		case BT_BYTE:
-			return &BinaryTypedValue{
-				Type:  BT_BYTE,
-				Value: genericDivide[byte](l.Value, r.Value),
-			}
-		case BT_FLOAT32:
-			return &BinaryTypedValue{
-				Type:  BT_FLOAT32,
-				Value: genericDivide[float32](l.Value, r.Value),
-			}
-		case BT_FLOAT64:
-			return &BinaryTypedValue{
-				Type:  BT_FLOAT64,
-				Value: genericDivide[float64](l.Value, r.Value),
-			}
-		default:
-			panic("invalid type for divide operator")
-		}
-	default:
-		panic("unrecognized operator")
-	}
 }
 
 func (r *Runtime) defaultValueOf(binaryType BinaryType) any {

@@ -117,6 +117,39 @@ type Expression struct {
 	Type            BinaryType
 }
 
+func NewVSymbolExpression(symbolRef int, valueType BinaryType) *Expression {
+	return &Expression{
+		LeftExpression:  nil,
+		RightExpression: nil,
+		Operator:        BO_VSYMBOL,
+		Value:           symbolRef,
+		Type:            valueType,
+	}
+}
+
+func NewFunctionExpression(functionPC int, returnType BinaryType, args []*FunctionArgument) *Expression {
+	return &Expression{
+		Type:            returnType,
+		LeftExpression:  nil,
+		RightExpression: nil,
+		Operator:        BO_FUNCTION_CALL,
+		Value: &BinaryFunctionCall{
+			BlockEntry: functionPC,
+			Args:       args,
+		},
+	}
+}
+
+func NewConstantExpression(value any, valueType BinaryType) *Expression {
+	return &Expression{
+		Type:            valueType,
+		Value:           value,
+		Operator:        BO_CONSTANT,
+		LeftExpression:  nil,
+		RightExpression: nil,
+	}
+}
+
 type FunctionArgument struct {
 	Expression *Expression
 	SymbolRef  int

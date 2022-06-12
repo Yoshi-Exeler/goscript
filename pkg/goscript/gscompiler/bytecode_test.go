@@ -29,7 +29,8 @@ func TestResolveExpression(t *testing.T) {
 		Type:            BT_UINT8,
 	}
 	// now resolve it
-	result := plusExpr.Resolve()
+	rt := Runtime{}
+	result := rt.ResolveExpression(plusExpr)
 	if result.Type != BT_UINT8 {
 		t.Fatalf("expression resolution failed, expected type %v but got %v", BT_UINT8, result.Type)
 	}

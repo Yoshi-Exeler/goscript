@@ -2,27 +2,14 @@ package gscompiler
 
 import (
 	"fmt"
-	"os"
-	"sync"
 )
 
-var once sync.Once
-
-var instance *Runtime
-
-func Init() {
-	once.Do(func() {
-		// do init here later
-		instance = &Runtime{}
-	})
-}
-
-func GetInstance() *Runtime {
-	return instance
+func NewRuntime() *Runtime {
+	return &Runtime{}
 }
 
 type Runtime struct {
-	SymbolTable      []*BinarySymbol
+	SymbolTable      []*BinaryTypedValue
 	SymbolScopeStack [][]int // [scope depth][symbols]
 	ProgramCounter   int
 	Program          Program
@@ -31,7 +18,7 @@ type Runtime struct {
 // reset will reset the state of the runtime
 func (r *Runtime) reset() {
 	r.ProgramCounter = 0
-	r.SymbolTable = []*BinarySymbol{}
+	r.SymbolTable = []*BinaryTypedValue{}
 }
 
 func (r *Runtime) enterScope() {
@@ -53,27 +40,28 @@ func (r *Runtime) exitScope() {
 }
 
 // Exec will reset the runtime and then run the specified program until it completes
-func (r *Runtime) Exec(program Program) {
+func (r *Runtime) Exec(program Program) any {
 	// completely reset the runtime
 	r.reset()
 	// save our program
 	r.Program = program
+	// build a symbol table of the requested size
+	r.SymbolTable = make([]*BinaryTypedValue, program.SymbolTableSize)
 	// execute our program until the main function returns
 	returnValue := r.execUntilReturn()
 	// exit with this value
-	r.exitWithValue(returnValue)
-}
-
-func (r *Runtime) exitWithValue(v any) {
-	fmt.Printf("Program exited with %v", v)
-	os.Exit(0)
+	return returnValue
 }
 
 // execUntilReturn will keep executing instructions until a return is hit in the current scope, and then return the value passed to the return
 func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 	for {
+		// check if there are more instructions
+		if r.ProgramCounter == len(r.SymbolTable)-1 {
+			return nil
+		}
 		// fetch the next operation from the program
-		operation := &r.Program[r.ProgramCounter]
+		operation := &r.Program.Operations[r.ProgramCounter]
 		// call the operation handler for this operation type
 		switch operation.Type {
 		case ASSIGN_EXPRESSION:
@@ -95,8 +83,12 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 // execUntilReturn will keep executing instructions until a return is hit in the current scope, and then return the value passed to the return
 func (r *Runtime) execUntilScopeClose() {
 	for {
+		// check if there are more instructions
+		if r.ProgramCounter == len(r.SymbolTable)-1 {
+			return
+		}
 		// fetch the next operation from the program
-		operation := &r.Program[r.ProgramCounter]
+		operation := &r.Program.Operations[r.ProgramCounter]
 		// call the operation handler for this operation type
 		switch operation.Type {
 		case ASSIGN_EXPRESSION:
@@ -128,7 +120,7 @@ func (r *Runtime) execAssignExpression(operation *BinaryOperation) {
 	// resolve the expression
 	resolution := r.ResolveExpression(expression)
 	// assign the resolution to the referenced symbol
-	r.SymbolTable[symbolRef].Value = resolution
+	r.SymbolTable[symbolRef] = resolution
 }
 
 func (r *Runtime) execConditionalBlockEnter(operation *BinaryOperation) {
@@ -195,7 +187,7 @@ func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 		// get the symbolReference from the value
 		symbolRef := e.Value.(int)
 		// yield the value of the symbol from the symbol table
-		return r.SymbolTable[symbolRef].Value
+		return r.SymbolTable[symbolRef]
 	}
 	// otherwise, resolve the left expression
 	left := r.ResolveExpression(e.LeftExpression)

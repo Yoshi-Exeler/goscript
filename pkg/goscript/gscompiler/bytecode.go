@@ -1,6 +1,9 @@
 package gscompiler
 
-type Program []BinaryOperation
+type Program struct {
+	Operations      []BinaryOperation
+	SymbolTableSize int
+}
 
 type OperationType byte
 

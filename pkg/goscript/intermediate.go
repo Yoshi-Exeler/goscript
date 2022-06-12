@@ -1,4 +1,4 @@
-package gscompiler
+package goscript
 
 type Application struct {
 	Operations []Operation

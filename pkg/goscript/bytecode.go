@@ -1,4 +1,6 @@
-package gscompiler
+package goscript
+
+import "fmt"
 
 type Program struct {
 	Operations      []BinaryOperation
@@ -39,6 +41,35 @@ const (
 	8 JUMP 2
 	9
 */
+
+func (p *Program) String() string {
+	ret := fmt.Sprintf("BEGIN PROGRAM, %v SYMBOLS\n", len(p.Operations))
+	for pc, op := range p.Operations {
+		switch op.Type {
+		case ASSIGN_EXPRESSION:
+			ret += fmt.Sprintf("[%v] ASSIGN_EXPRESSION %v %v\n", pc, op.Args[0], op.Args[1].(*Expression))
+		case CONDITIONAL_BLOCK_ENTER:
+			ret += fmt.Sprintf("[%v] CONDITIONAL_BLOCK_ENTER %v %v %v %v\n", pc, op.Args[0].(*Expression), op.Args[1].(int), op.Args[2].(int), op.Args[3].(int))
+		case RETURN_VALUE:
+			ret += fmt.Sprintf("[%v] RETURN_VALUE %v\n", pc, op.Args[0].(*Expression))
+		case CALL_FUNCTION:
+			ret += fmt.Sprintf("[%v] CALL_FUNCTION %v\n", pc, op.Args[0].(*Expression))
+		case CLOSE_SCOPE:
+			ret += fmt.Sprintf("[%v] CLOSE_SCOPE\n", pc)
+		case ENTER_LOOP:
+			ret += fmt.Sprintf("[%v] ENTER_LOOP\n", pc)
+		case COUNT_LOOP_HEAD:
+			ret += fmt.Sprintf("[%v] COUNT_LOOP_HEAD %v %v\n", pc, op.Args[0].(*Expression), op.Args[1].(int))
+		case FOREACH_LOOP_HEAD:
+			ret += fmt.Sprintf("[%v] FOREACH_LOOP_HEAD\n", pc)
+		case JUMP:
+			ret += fmt.Sprintf("[%v] JUMP %v\n", pc, op.Args[0].(int))
+		default:
+			ret += "INVALID OP"
+		}
+	}
+	return ret
+}
 
 type BinaryOperation struct {
 	Type OperationType // which operation should be performed
@@ -143,6 +174,19 @@ type Expression struct {
 	Operator        BinaryOperator
 	Value           any // only set when the expression is a constant
 	Type            BinaryType
+}
+
+func (e *Expression) String() string {
+	switch e.Operator {
+	case BO_CONSTANT:
+		return fmt.Sprintf("CONSTANT(%v) ", e.Value)
+	case BO_FUNCTION_CALL:
+		return fmt.Sprintf("FUNCTION@%v(%v)", e.Value.(*BinaryFunctionCall).BlockEntry, e.Value.(*BinaryFunctionCall).Args)
+	case BO_VSYMBOL:
+		return fmt.Sprintf("VSYMBOL(%v)", e.Value)
+	default:
+		return fmt.Sprint("EXPRESSION")
+	}
 }
 
 func NewVSymbolExpression(symbolRef int, valueType BinaryType) *Expression {

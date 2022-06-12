@@ -1,4 +1,4 @@
-package gscompiler
+package goscript
 
 import (
 	"regexp"

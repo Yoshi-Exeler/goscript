@@ -1,4 +1,4 @@
-package gscompiler
+package goscript
 
 import (
 	"fmt"
@@ -42,6 +42,7 @@ func TestAssignFunctionReturnValue(t *testing.T) {
 		},
 		SymbolTableSize: 10,
 	}
+	fmt.Println(testProgram.String())
 	runtime := NewRuntime()
 	runtime.Exec(testProgram)
 	if runtime.SymbolTable[1].Value.(uint8) != 11 {

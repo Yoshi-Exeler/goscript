@@ -189,6 +189,13 @@ func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 	if e.IsFunction() {
 		return r.execFunctionExpression(e)
 	}
+	// if the expression is a variable symbol reference, just yield the symbols value
+	if e.isVSymbol() {
+		// get the symbolReference from the value
+		symbolRef := e.Value.(int)
+		// yield the value of the symbol from the symbol table
+		return r.SymbolTable[symbolRef].Value
+	}
 	// otherwise, resolve the left expression
 	left := r.ResolveExpression(e.LeftExpression)
 	// then resolve the right expression
@@ -208,11 +215,11 @@ func (r *Runtime) execFunctionExpression(e *Expression) *BinaryTypedValue {
 	// open a new scope
 	r.enterScope()
 	// perform the appropriate argument mapping
-	for outer, inner := range call.Args {
-		// copy the symbol to avoid mutating the external state
-		localSymbol := *r.SymbolTable[outer]
+	for _, arg := range call.Args {
+		// resolve the argument expression
+		argResolution := r.ResolveExpression(arg.Expression)
 		// set the symbol in the local scope
-		r.SymbolTable[inner] = &localSymbol
+		r.SymbolTable[arg.SymbolRef].Value = argResolution
 	}
 	// execute until this top level function returns
 	value := r.execUntilReturn()
@@ -221,10 +228,6 @@ func (r *Runtime) execFunctionExpression(e *Expression) *BinaryTypedValue {
 	// return to the original place in the code
 	r.ProgramCounter = returnPC
 	return value
-}
-
-func (e *Expression) IsFunction() bool {
-	return e.Operator == BO_FUNCTION_CALL
 }
 
 // applyOperator applies the specified operator to the specified values, assuming that the operation has been type checked before

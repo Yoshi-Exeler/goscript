@@ -10,6 +10,7 @@ const (
 	RETURN_VALUE            OperationType = 3 // return a value
 	CALL_FUNCTION           OperationType = 4 // just call a function
 	CLOSE_SCOPE             OperationType = 5 // closing bracket of a scope
+	CALL_BUILTIN            OperationType = 6 // calls a builtin function (go binding)
 )
 
 type BinaryOperation struct {
@@ -39,24 +40,35 @@ const (
 
 type BinarySymbol struct {
 	Name  string
-	Type  BinaryType
-	Value any
+	Value *BinaryTypedValue
 }
 
 type BinaryFunctionCall struct {
-	BlockEntry int         // index of the program to jump to, to begin the function execution
-	Args       map[int]int // symbol map for the arguments of the function call. Maps outside symbols to inside symbols
+	BlockEntry int                 // index of the program to jump to, to begin the function execution
+	Args       []*FunctionArgument // symbol map for the arguments of the function call. Maps outside symbols to inside symbols
 }
 
 type BinaryOperator byte
 
 const (
-	BO_CONSTANT      BinaryOperator = 0
-	BO_PLUS          BinaryOperator = 1
-	BO_MINUS         BinaryOperator = 2
-	BO_MULTIPLY      BinaryOperator = 3
-	BO_DIVIDE        BinaryOperator = 4
-	BO_FUNCTION_CALL BinaryOperator = 5 // represents a function that returns a constant
+	BO_CONSTANT      BinaryOperator = 1
+	BO_PLUS          BinaryOperator = 2
+	BO_MINUS         BinaryOperator = 3
+	BO_MULTIPLY      BinaryOperator = 4
+	BO_DIVIDE        BinaryOperator = 5
+	BO_FUNCTION_CALL BinaryOperator = 6 // represents a function that returns a constant
+	BO_VSYMBOL       BinaryOperator = 7
+)
+
+type BuiltinFunction byte
+
+const (
+	BF_LEN     BuiltinFunction = 1
+	BF_PRINT   BuiltinFunction = 2
+	BF_PRINTLN BuiltinFunction = 3
+	BF_PRINTF  BuiltinFunction = 4
+	BF_MIN     BuiltinFunction = 5
+	BF_MAX     BuiltinFunction = 6
 )
 
 // Expression represents an expression tree.
@@ -71,6 +83,11 @@ type Expression struct {
 	Type            BinaryType
 }
 
+type FunctionArgument struct {
+	Expression *Expression
+	SymbolRef  int
+}
+
 type BinaryTypedValue struct {
 	Type  BinaryType
 	Value any
@@ -82,6 +99,14 @@ type Numeric interface {
 
 func (e *Expression) IsConstant() bool {
 	return e.Operator == BO_CONSTANT
+}
+
+func (e *Expression) IsFunction() bool {
+	return e.Operator == BO_FUNCTION_CALL
+}
+
+func (e *Expression) isVSymbol() bool {
+	return e.Operator == BO_VSYMBOL
 }
 
 func (b *BinaryType) isNumeric() bool {

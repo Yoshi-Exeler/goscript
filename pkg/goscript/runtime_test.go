@@ -2,11 +2,10 @@ package goscript
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"runtime/pprof"
 	"testing"
 	"time"
+
+	"github.com/pkg/profile"
 )
 
 /*
@@ -17,9 +16,9 @@ import (
 func TestAssignConstant(t *testing.T) {
 	testProgram := Program{
 		Operations: []BinaryOperation{
-			NewBindOp(1),
+			NewBindOp(1, BT_UINT8),
 			NewAssignExpressionOp(1, NewConstantExpression(uint8(11), BT_UINT8)),
-			NewReturnValueOp(NewVSymbolExpression(1, BT_UINT64))},
+			NewReturnValueOp(NewVSymbolExpression(1))},
 		SymbolTableSize: 2,
 	}
 	runtime := NewRuntime()
@@ -43,11 +42,11 @@ func TestAssignConstant(t *testing.T) {
 func TestAssignFunctionReturnValue(t *testing.T) {
 	testProgram := Program{
 		Operations: []BinaryOperation{
-			NewBindOp(1),
-			NewBindOp(2),
-			NewAssignExpressionOp(1, NewFunctionExpression(3, BT_UINT8, []*FunctionArgument{})), // assign the return value of the function at pc1 to the symbol 1
-			NewAssignExpressionOp(2, NewConstantExpression(uint8(11), BT_UINT8)),                // assign the constant 11 to the local symbol 2
-			NewReturnValueOp(NewVSymbolExpression(2, BT_UINT8)),                                 // return the value of the symbol 2
+			NewBindOp(1, BT_UINT8),
+			NewBindOp(2, BT_UINT8),
+			NewAssignExpressionOp(1, NewFunctionExpression(3, []*FunctionArgument{})), // assign the return value of the function at pc1 to the symbol 1
+			NewAssignExpressionOp(2, NewConstantExpression(uint8(11), BT_UINT8)),      // assign the constant 11 to the local symbol 2
+			NewReturnValueOp(NewVSymbolExpression(2)),                                 // return the value of the symbol 2
 		},
 		SymbolTableSize: 10,
 	}
@@ -85,48 +84,49 @@ func TestAssignFunctionReturnValue(t *testing.T) {
 	5 EXIT_SCOPE                     # exit the loop scope
 */
 func TestLoopAssign(t *testing.T) {
-	f, err := os.Create("profile.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
+	// f, err := os.Create("profile.txt")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// pprof.StartCPUProfile(f)
+	// defer pprof.StopCPUProfile()
+	// MemProfileAllocs changes which type of memory to profile
+	// allocations.
+	prof := profile.Start(profile.MemProfile, profile.ProfilePath("."))
+	defer prof.Stop()
 	testProgram := Program{
 		Operations: []BinaryOperation{
-			NewBindOp(1),
-			NewAssignExpressionOp(1, NewFunctionExpression(3, BT_UINT64, []*FunctionArgument{})), // let a: uint8 = getLoopIteratorAfter10()
-			NewReturnValueOp(NewVSymbolExpression(1, BT_UINT64)),
-			NewBindOp(2),
+			NewBindOp(1, BT_UINT64),
+			NewAssignExpressionOp(1, NewFunctionExpression(3, []*FunctionArgument{})), // let a: uint8 = getLoopIteratorAfter10()
+			NewReturnValueOp(NewVSymbolExpression(1)),
+			NewBindOp(2, BT_UINT64),
 			NewAssignExpressionOp(2, NewConstantExpression(uint64(0), BT_UINT64)), // let b: uint64 = 0
 			NewEnterScope(), // enter loop scope
-			NewBindOp(3),
+			NewBindOp(3, BT_UINT64),
 			NewAssignExpressionOp(3, NewConstantExpression(uint64(0), BT_UINT64)), // let i: uint64 = 0
 			NewJumpIfNotOp(12, &Expression{ // break out of loop if i < 10
-				LeftExpression:  NewVSymbolExpression(3, BT_UINT64),
+				LeftExpression:  NewVSymbolExpression(3),
 				RightExpression: NewConstantExpression(uint64(1000000000), BT_UINT64),
 				Operator:        BO_LESSER,
 				Value: &BinaryTypedValue{
-					Type:  BT_BOOLEAN,
 					Value: false,
 				},
-				Type: BT_BOOLEAN,
 			}),
-			NewAssignExpressionOp(2, NewVSymbolExpression(3, BT_UINT64)), // b = i
+			NewAssignExpressionOp(2, NewVSymbolExpression(3)), // b = i
 			NewAssignExpressionOp(3, &Expression{ // i++
-				LeftExpression:  NewVSymbolExpression(3, BT_UINT64),
+				LeftExpression:  NewVSymbolExpression(3),
 				RightExpression: NewConstantExpression(uint64(1), BT_UINT64),
 				Operator:        BO_PLUS,
 				Value: &BinaryTypedValue{
 					Type:  BT_UINT64,
 					Value: 0,
 				},
-				Type: BT_UINT64,
 			}),
 			NewJumpOp(8),     // go back to the start of the loop
 			NewExitScopeOp(), // exit the loop scope
-			NewReturnValueOp(NewVSymbolExpression(2, BT_UINT64)), // return b
+			NewReturnValueOp(NewVSymbolExpression(2)), // return b
 		},
-		SymbolTableSize: 10,
+		SymbolTableSize: 4,
 	}
 	fmt.Println(testProgram.String())
 	runtime := NewRuntime()

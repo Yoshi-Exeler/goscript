@@ -66,7 +66,7 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 		case ASSIGN:
 			r.execAssign(operation)
 		case CALL:
-			r.execCall(operation)
+			r.execFunctionExpression(operation.Args[0].(*Expression))
 		case BIND:
 			r.execBind(operation)
 		case RETURN:
@@ -124,17 +124,15 @@ func (r *Runtime) execJump(operation *BinaryOperation) {
 	r.ProgramCounter = targetPC
 }
 
-// execCall is a wrapper that runs a function call
-func (r *Runtime) execCall(operation *BinaryOperation) {
-	// get the function expression from arg0
-	_ = r.execFunctionExpression(operation.Args[0].(*Expression))
-}
-
 func (r *Runtime) execBind(operation *BinaryOperation) {
 	// get the symbol reference from arg0
 	symbolRef := operation.Args[0].(int)
+	// get the symbol type from arg0
+	symType := operation.Args[1].(BinaryType)
 	// initialize the symbol
-	r.SymbolTable[symbolRef] = &BinaryTypedValue{}
+	r.SymbolTable[symbolRef] = &BinaryTypedValue{
+		Type: symType,
+	}
 	// save the symbol reference to the current scope
 	r.SymbolScopeStack[len(r.SymbolScopeStack)-1] = append(r.SymbolScopeStack[len(r.SymbolScopeStack)-1], symbolRef)
 }
@@ -145,10 +143,7 @@ func (r *Runtime) execAssign(operation *BinaryOperation) {
 	// get the expression from arg1
 	expression := operation.Args[1].(*Expression)
 	// resolve the expression and  assign the resolution to the referenced symbol
-	resolution := r.ResolveExpression(expression)
-	sym := r.SymbolTable[symbolRef]
-	sym.Value = resolution.Value
-	sym.Type = resolution.Type
+	r.SymbolTable[symbolRef].Value = r.ResolveExpression(expression).Value
 }
 
 // ResolveExpression will recursively resolve the expression to a typed value.
@@ -186,7 +181,7 @@ func (r *Runtime) execFunctionExpression(e *Expression) *BinaryTypedValue {
 		// resolve the argument expression
 		argResolution := r.ResolveExpression(arg.Expression)
 		// set the symbol in the local scope
-		r.SymbolTable[arg.SymbolRef].Value = argResolution
+		r.SymbolTable[arg.SymbolRef].Value = argResolution.Value
 	}
 	// execute until this top level function returns
 	e.Value = r.execUntilReturn()

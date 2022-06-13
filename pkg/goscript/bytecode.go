@@ -63,9 +63,9 @@ func (p *Program) String() string {
 func (b *BinaryOperation) String() string {
 	switch b.Type {
 	case ASSIGN:
-		return fmt.Sprintf("ASSIGN %v %v", b.Args[0], b.Args[1].(*Expression))
+		return fmt.Sprintf("ASSIGN SYM(%v) %v", b.Args[0], b.Args[1].(*Expression))
 	case BIND:
-		return fmt.Sprintf("BIND %v", b.Args[0])
+		return fmt.Sprintf("BIND SYM(%v) %v", b.Args[0], b.Args[1].(BinaryType).String())
 	case RETURN:
 		return fmt.Sprintf("RETURN %v", b.Args[0].(*Expression))
 	case CALL:
@@ -75,11 +75,11 @@ func (b *BinaryOperation) String() string {
 	case EXIT_SCOPE:
 		return fmt.Sprintf("EXIT_SCOPE")
 	case JUMP:
-		return fmt.Sprintf("JUMP %v", b.Args[0].(int))
+		return fmt.Sprintf("JUMP [%v]", b.Args[0].(int))
 	case JUMP_IF:
-		return fmt.Sprintf("JUMP_IF %v %v", b.Args[0].(*Expression), b.Args[1].(int))
+		return fmt.Sprintf("JUMP_IF %v [%v]", b.Args[0].(*Expression), b.Args[1].(int))
 	case JUMP_IF_NOT:
-		return fmt.Sprintf("JUMP_IF_NOT %v %v", b.Args[0].(*Expression), b.Args[1].(int))
+		return fmt.Sprintf("JUMP_IF_NOT %v [%v]", b.Args[0].(*Expression), b.Args[1].(int))
 	default:
 		return "INVALID OP"
 	}
@@ -104,10 +104,10 @@ func NewEnterScope() BinaryOperation {
 	}
 }
 
-func NewBindOp(symbolRef int) BinaryOperation {
+func NewBindOp(symbolRef int, symbolType BinaryType) BinaryOperation {
 	return BinaryOperation{
 		Type: BIND,
-		Args: []any{symbolRef},
+		Args: []any{symbolRef, symbolType},
 	}
 }
 
@@ -156,24 +156,62 @@ func NewCallFunctionOp(functionExpression *Expression) BinaryOperation {
 type BinaryType byte
 
 const (
-	BT_INT8       BinaryType = 1
-	BT_INT16      BinaryType = 2
-	BT_INT32      BinaryType = 3
-	BT_INT64      BinaryType = 4
-	BT_UINT8      BinaryType = 5
-	BT_UINT16     BinaryType = 6
-	BT_UINT32     BinaryType = 7
-	BT_UINT64     BinaryType = 8
-	BT_STRING     BinaryType = 9
-	BT_CHAR       BinaryType = 10
-	BT_BYTE       BinaryType = 11
-	BT_FLOAT32    BinaryType = 12
-	BT_FLOAT64    BinaryType = 13
-	BT_ANY        BinaryType = 14
-	BT_STRUCT     BinaryType = 15
-	BT_BOOLEAN    BinaryType = 16
-	BT_SYMBOL_REF BinaryType = 17
+	BT_INT8    BinaryType = 1
+	BT_INT16   BinaryType = 2
+	BT_INT32   BinaryType = 3
+	BT_INT64   BinaryType = 4
+	BT_UINT8   BinaryType = 5
+	BT_UINT16  BinaryType = 6
+	BT_UINT32  BinaryType = 7
+	BT_UINT64  BinaryType = 8
+	BT_STRING  BinaryType = 9
+	BT_CHAR    BinaryType = 10
+	BT_BYTE    BinaryType = 11
+	BT_FLOAT32 BinaryType = 12
+	BT_FLOAT64 BinaryType = 13
+	BT_ANY     BinaryType = 14
+	BT_STRUCT  BinaryType = 15
+	BT_BOOLEAN BinaryType = 16
 )
+
+func (b BinaryType) String() string {
+	switch b {
+	case BT_INT8:
+		return fmt.Sprint("INT8")
+	case BT_INT16:
+		return fmt.Sprint("INT16")
+	case BT_INT32:
+		return fmt.Sprint("INT32")
+	case BT_INT64:
+		return fmt.Sprint("INT64")
+	case BT_UINT8:
+		return fmt.Sprint("UINT8")
+	case BT_UINT16:
+		return fmt.Sprint("UINT16")
+	case BT_UINT32:
+		return fmt.Sprint("UINT32")
+	case BT_UINT64:
+		return fmt.Sprint("UINT64")
+	case BT_STRING:
+		return fmt.Sprint("STRING")
+	case BT_CHAR:
+		return fmt.Sprint("CHAR")
+	case BT_BYTE:
+		return fmt.Sprint("BYTE")
+	case BT_FLOAT32:
+		return fmt.Sprint("FLOAT32")
+	case BT_FLOAT64:
+		return fmt.Sprint("FLOAT64")
+	case BT_ANY:
+		return fmt.Sprint("ANY")
+	case BT_STRUCT:
+		return fmt.Sprint("STRUCT")
+	case BT_BOOLEAN:
+		return fmt.Sprint("BOOLEAN")
+	default:
+		return fmt.Sprint("invalid type")
+	}
+}
 
 type BinarySymbol struct {
 	Name  string
@@ -217,7 +255,6 @@ type Expression struct {
 	RightExpression *Expression
 	Operator        BinaryOperator
 	Value           *BinaryTypedValue // only set when the expression is a constant
-	Type            BinaryType
 	Ref             int
 	Args            []*FunctionArgument
 }
@@ -225,33 +262,30 @@ type Expression struct {
 func (e *Expression) String() string {
 	switch e.Operator {
 	case BO_CONSTANT:
-		return fmt.Sprintf("CONSTANT(%v) ", e.Value)
+		return fmt.Sprintf("CONST(%v) ", e.Value.Value)
 	case BO_FUNCTION_CALL:
-		return fmt.Sprintf("FUNCTION@%v(%v)", e.Ref, e.Args)
+		return fmt.Sprintf("FUNC[%v]%v", e.Ref, e.Args)
 	case BO_VSYMBOL:
-		return fmt.Sprintf("VSYMBOL(%v)", e.Value)
+		return fmt.Sprintf("SYM(%v)", e.Ref)
 	default:
-		return fmt.Sprint("EXPRESSION")
+		return fmt.Sprint("EXPR")
 	}
 }
 
-func NewVSymbolExpression(symbolRef int, valueType BinaryType) *Expression {
+func NewVSymbolExpression(symbolRef int) *Expression {
 	return &Expression{
 		LeftExpression:  nil,
 		RightExpression: nil,
 		Operator:        BO_VSYMBOL,
 		Ref:             symbolRef,
 		Value: &BinaryTypedValue{
-			Type:  valueType,
 			Value: 0,
 		},
-		Type: valueType,
 	}
 }
 
-func NewFunctionExpression(functionPC int, returnType BinaryType, args []*FunctionArgument) *Expression {
+func NewFunctionExpression(functionPC int, args []*FunctionArgument) *Expression {
 	return &Expression{
-		Type:            returnType,
 		LeftExpression:  nil,
 		RightExpression: nil,
 		Operator:        BO_FUNCTION_CALL,
@@ -263,7 +297,6 @@ func NewFunctionExpression(functionPC int, returnType BinaryType, args []*Functi
 
 func NewConstantExpression(value any, valueType BinaryType) *Expression {
 	return &Expression{
-		Type: valueType,
 		Value: &BinaryTypedValue{
 			Value: value,
 			Type:  valueType,

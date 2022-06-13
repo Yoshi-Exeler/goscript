@@ -12,7 +12,6 @@ func TestResolveExpression(t *testing.T) {
 			Type:  BT_UINT8,
 			Value: uint8(5),
 		},
-		Type: BT_UINT8,
 	}
 	twoExpr := &Expression{
 		Operator: BO_CONSTANT,
@@ -20,13 +19,11 @@ func TestResolveExpression(t *testing.T) {
 			Type:  BT_UINT8,
 			Value: uint8(2),
 		},
-		Type: BT_UINT8,
 	}
 	multExpr := &Expression{
 		LeftExpression:  fiveExpr,
 		RightExpression: twoExpr,
 		Operator:        BO_MULTIPLY,
-		Type:            BT_UINT8,
 		Value: &BinaryTypedValue{
 			Type:  BT_UINT8,
 			Value: 0,
@@ -36,7 +33,6 @@ func TestResolveExpression(t *testing.T) {
 		LeftExpression:  fiveExpr,
 		RightExpression: multExpr,
 		Operator:        BO_PLUS,
-		Type:            BT_UINT8,
 		Value: &BinaryTypedValue{
 			Type:  BT_UINT8,
 			Value: 0,

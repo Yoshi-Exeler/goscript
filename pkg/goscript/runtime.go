@@ -2,7 +2,6 @@ package goscript
 
 import (
 	"fmt"
-	"time"
 )
 
 func NewRuntime() *Runtime {
@@ -20,6 +19,7 @@ type Runtime struct {
 func (r *Runtime) reset() {
 	r.ProgramCounter = 0
 	r.SymbolTable = []*BinaryTypedValue{}
+	r.SymbolScopeStack = make([][]int, 1)
 }
 
 func (r *Runtime) enterScope() {
@@ -57,27 +57,25 @@ func (r *Runtime) Exec(program Program) any {
 // execUntilReturn will keep executing instructions until a return is hit in the current scope, and then return the value passed to the return
 func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 	for {
-		// check if there are more instructions
-		if r.ProgramCounter == len(r.Program.Operations) {
-			return nil
-		}
 		// fetch the next operation from the program
 		operation := &r.Program.Operations[r.ProgramCounter]
-		fmt.Printf("[%v] %v\n", r.ProgramCounter, operation.String())
-		time.Sleep(time.Millisecond * 50)
+		// fmt.Printf("[%v] %v\n", r.ProgramCounter, operation.String())
+		// time.Sleep(time.Millisecond * 50)
 		// call the operation handler for this operation type
 		switch operation.Type {
 		case ASSIGN:
-			r.execAssignExpression(operation)
+			r.execAssign(operation)
 		case CALL:
-			r.execFunctionOperation(operation)
+			r.execCall(operation)
+		case BIND:
+			r.execBind(operation)
 		case RETURN:
 			returnExpr := operation.Args[0].(*Expression)
 			return r.ResolveExpression(returnExpr)
 		case ENTER_SCOPE:
 			r.enterScope()
 		case EXIT_SCOPE:
-			r.enterScope()
+			r.exitScope()
 		case JUMP:
 			r.execJump(operation)
 		case JUMP_IF:
@@ -126,74 +124,77 @@ func (r *Runtime) execJump(operation *BinaryOperation) {
 	r.ProgramCounter = targetPC
 }
 
-// execFunctionOperation is a wrapper that runs a function call
-func (r *Runtime) execFunctionOperation(operation *BinaryOperation) {
+// execCall is a wrapper that runs a function call
+func (r *Runtime) execCall(operation *BinaryOperation) {
 	// get the function expression from arg0
-	r.execFunctionExpression(operation.Args[0].(*Expression))
+	_ = r.execFunctionExpression(operation.Args[0].(*Expression))
 }
 
-func (r *Runtime) execAssignExpression(operation *BinaryOperation) {
+func (r *Runtime) execBind(operation *BinaryOperation) {
+	// get the symbol reference from arg0
+	symbolRef := operation.Args[0].(int)
+	// initialize the symbol
+	r.SymbolTable[symbolRef] = &BinaryTypedValue{}
+	// save the symbol reference to the current scope
+	r.SymbolScopeStack[len(r.SymbolScopeStack)-1] = append(r.SymbolScopeStack[len(r.SymbolScopeStack)-1], symbolRef)
+}
+
+func (r *Runtime) execAssign(operation *BinaryOperation) {
 	// get the symbol reference from arg0
 	symbolRef := operation.Args[0].(int)
 	// get the expression from arg1
 	expression := operation.Args[1].(*Expression)
-	// resolve the expression
+	// resolve the expression and  assign the resolution to the referenced symbol
 	resolution := r.ResolveExpression(expression)
-	// assign the resolution to the referenced symbol
-	r.SymbolTable[symbolRef] = resolution
+	sym := r.SymbolTable[symbolRef]
+	sym.Value = resolution.Value
+	sym.Type = resolution.Type
 }
 
+// ResolveExpression will recursively resolve the expression to a typed value.
 func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 	// if the expression is constant, return its value
 	if e.IsConstant() {
-		return &BinaryTypedValue{
-			Type:  e.Type,
-			Value: e.Value,
-		}
+		return e.Value
+	}
+	// if the expression is a variable symbol reference, just yield the symbols value
+	if e.isVSymbol() {
+		return r.SymbolTable[e.Ref]
 	}
 	// if the expression is a function call, start executing the function until it eventually returns a constant
 	if e.IsFunction() {
 		return r.execFunctionExpression(e)
-	}
-	// if the expression is a variable symbol reference, just yield the symbols value
-	if e.isVSymbol() {
-		// get the symbolReference from the value
-		symbolRef := e.Value.(int)
-		// yield the value of the symbol from the symbol table
-		return r.SymbolTable[symbolRef]
 	}
 	// otherwise, resolve the left expression
 	left := r.ResolveExpression(e.LeftExpression)
 	// then resolve the right expression
 	right := r.ResolveExpression(e.RightExpression)
 	// finally apply the operator
-	return applyOperator(left, right, e.Operator)
+	return applyOperator(left, right, e.Operator, e.Value)
 }
 
 // exec will execute the expression as a function, assuming that it has been type checked before
 func (r *Runtime) execFunctionExpression(e *Expression) *BinaryTypedValue {
-	// fetch the call information
-	call := e.Value.(*BinaryFunctionCall)
 	// save the current pc so we can return here later
 	returnPC := r.ProgramCounter
 	// jump to the appropriate section
-	r.ProgramCounter = call.BlockEntry
+	r.ProgramCounter = e.Ref
 	// open a new scope
 	r.enterScope()
 	// perform the appropriate argument mapping
-	for _, arg := range call.Args {
+	for _, arg := range e.Args {
 		// resolve the argument expression
 		argResolution := r.ResolveExpression(arg.Expression)
 		// set the symbol in the local scope
 		r.SymbolTable[arg.SymbolRef].Value = argResolution
 	}
 	// execute until this top level function returns
-	value := r.execUntilReturn()
+	e.Value = r.execUntilReturn()
 	// exit the scope
 	r.exitScope()
 	// return to the original place in the code
 	r.ProgramCounter = returnPC
-	return value
+	return e.Value
 }
 
 func (r *Runtime) defaultValueOf(binaryType BinaryType) any {
@@ -231,28 +232,4 @@ func (r *Runtime) defaultValueOf(binaryType BinaryType) any {
 	default:
 		panic(fmt.Sprintf("[GSR] runtime exception, invalid symbol type %v", binaryType))
 	}
-}
-
-func genericPlus[T Numeric](l any, r any) T {
-	resL := l.(T)
-	resR := r.(T)
-	return resL + resR
-}
-
-func genericMinus[T Numeric](l any, r any) T {
-	resL := l.(T)
-	resR := r.(T)
-	return resL - resR
-}
-
-func genericMultiply[T Numeric](l any, r any) T {
-	resL := l.(T)
-	resR := r.(T)
-	return resL * resR
-}
-
-func genericDivide[T Numeric](l any, r any) float64 {
-	resL := l.(T)
-	resR := r.(T)
-	return float64(resL) / float64(resR)
 }

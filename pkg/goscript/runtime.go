@@ -71,7 +71,7 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 			r.execBind(operation)
 		case RETURN:
 			returnExpr := operation.Args[0].(*Expression)
-			return r.ResolveExpression(returnExpr)
+			return r.unlink(r.ResolveExpression(returnExpr))
 		case ENTER_SCOPE:
 			r.enterScope()
 		case EXIT_SCOPE:
@@ -86,6 +86,124 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 			panic(fmt.Sprintf("[GSR] runtime exception, invalid operation type %v", operation.Type))
 		}
 		r.ProgramCounter++
+	}
+}
+
+func (r *Runtime) unlinkedAssign(target *BinaryTypedValue, value *BinaryTypedValue) {
+	switch value.Type {
+	case BT_INT8:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*int8) = *value.Value.(*int8)
+	case BT_INT16:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*int16) = *value.Value.(*int16)
+	case BT_INT32:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*int32) = *value.Value.(*int32)
+	case BT_INT64:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*int64) = *value.Value.(*int64)
+	case BT_UINT8:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*uint8) = *value.Value.(*uint8)
+	case BT_UINT16:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*uint16) = *value.Value.(*uint16)
+	case BT_UINT32:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*uint32) = *value.Value.(*uint32)
+	case BT_UINT64:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*uint64) = *value.Value.(*uint64)
+	case BT_BYTE:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*byte) = *value.Value.(*byte)
+	case BT_FLOAT32:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*float32) = *value.Value.(*float32)
+	case BT_FLOAT64:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*float64) = *value.Value.(*float64)
+	case BT_STRING:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*string) = *value.Value.(*string)
+	case BT_BOOLEAN:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*bool) = *value.Value.(*bool)
+	default:
+		panic("unexpected type in unlink")
+	}
+}
+
+func (r *Runtime) unlink(value *BinaryTypedValue) *BinaryTypedValue {
+	switch value.Type {
+	case BT_INT8:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*int8)
+		value.Value = &underlying
+		return value
+	case BT_INT16:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*int16)
+		value.Value = &underlying
+		return value
+	case BT_INT32:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*int32)
+		value.Value = &underlying
+		return value
+	case BT_INT64:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*int64)
+		value.Value = &underlying
+		return value
+	case BT_UINT8:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*uint8)
+		value.Value = &underlying
+		return value
+	case BT_UINT16:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*uint16)
+		value.Value = &underlying
+		return value
+	case BT_UINT32:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*uint32)
+		value.Value = &underlying
+		return value
+	case BT_UINT64:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*uint64)
+		value.Value = &underlying
+		return value
+	case BT_BYTE:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*byte)
+		value.Value = &underlying
+		return value
+	case BT_FLOAT32:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*float32)
+		value.Value = &underlying
+		return value
+	case BT_FLOAT64:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*float64)
+		value.Value = &underlying
+		return value
+	case BT_STRING:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*string)
+		value.Value = &underlying
+		return value
+	case BT_BOOLEAN:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*bool)
+		value.Value = &underlying
+		return value
+	default:
+		panic("unexpected type in unlink")
 	}
 }
 
@@ -131,10 +249,51 @@ func (r *Runtime) execBind(operation *BinaryOperation) {
 	symType := operation.Args[1].(BinaryType)
 	// initialize the symbol
 	r.SymbolTable[symbolRef] = &BinaryTypedValue{
-		Type: symType,
+		Type:  symType,
+		Value: r.defaultValuePtrOf(symType),
 	}
 	// save the symbol reference to the current scope
 	r.SymbolScopeStack[len(r.SymbolScopeStack)-1] = append(r.SymbolScopeStack[len(r.SymbolScopeStack)-1], symbolRef)
+}
+
+func (r *Runtime) defaultValuePtrOf(valueType BinaryType) any {
+	switch valueType {
+	case BT_INT8:
+		zero := int8(0)
+		return &zero
+	case BT_INT16:
+		zero := int16(0)
+		return &zero
+	case BT_INT32:
+		zero := int32(0)
+		return &zero
+	case BT_INT64:
+		zero := int64(0)
+		return &zero
+	case BT_UINT8:
+		zero := uint8(0)
+		return &zero
+	case BT_UINT16:
+		zero := uint16(0)
+		return &zero
+	case BT_UINT32:
+		zero := uint32(0)
+		return &zero
+	case BT_UINT64:
+		zero := uint64(0)
+		return &zero
+	case BT_BYTE:
+		zero := byte(0)
+		return &zero
+	case BT_FLOAT32:
+		zero := float32(0)
+		return &zero
+	case BT_FLOAT64:
+		zero := float64(0)
+		return &zero
+	default:
+		panic("invalid type")
+	}
 }
 
 func (r *Runtime) execAssign(operation *BinaryOperation) {
@@ -143,29 +302,29 @@ func (r *Runtime) execAssign(operation *BinaryOperation) {
 	// get the expression from arg1
 	expression := operation.Args[1].(*Expression)
 	// resolve the expression and  assign the resolution to the referenced symbol
-	r.SymbolTable[symbolRef].Value = r.ResolveExpression(expression).Value
+	r.unlinkedAssign(r.SymbolTable[symbolRef], r.ResolveExpression(expression))
 }
 
 // ResolveExpression will recursively resolve the expression to a typed value.
 func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
-	// if the expression is constant, return its value
-	if e.IsConstant() {
+	switch e.Operator {
+	case BO_CONSTANT:
+		// if the expression is constant, return its value
 		return e.Value
-	}
-	// if the expression is a variable symbol reference, just yield the symbols value
-	if e.isVSymbol() {
+	case BO_VSYMBOL:
+		// if the expression is a variable symbol reference, just yield the symbols value
 		return r.SymbolTable[e.Ref]
-	}
-	// if the expression is a function call, start executing the function until it eventually returns a constant
-	if e.IsFunction() {
+	case BO_FUNCTION_CALL:
+		// if the expression is a function call, start executing the function until it eventually returns a constant
 		return r.execFunctionExpression(e)
+	default:
+		// otherwise, resolve the left expression
+		left := r.ResolveExpression(e.LeftExpression)
+		// then resolve the right expression
+		right := r.ResolveExpression(e.RightExpression)
+		// finally apply the operator
+		return applyOperator(left, right, e.Operator, e.Value)
 	}
-	// otherwise, resolve the left expression
-	left := r.ResolveExpression(e.LeftExpression)
-	// then resolve the right expression
-	right := r.ResolveExpression(e.RightExpression)
-	// finally apply the operator
-	return applyOperator(left, right, e.Operator, e.Value)
 }
 
 // exec will execute the expression as a function, assuming that it has been type checked before

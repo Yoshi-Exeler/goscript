@@ -33,6 +33,18 @@ const (
 */
 
 /*
+	Count Loop Snippet
+	0 ENTER_SCOPE                    # enter the loop scope
+	1 BIND 1 UINT64                  # init and alloc the symbol 1
+	1 ASSIGN_EXPRESSION 1 CONST(0)   # i := 0
+	2 JUMP_IF_NOT 1 < 10 5           # i < 10, if false jump to 5, exiting the loop
+	3 ASSIGN_EXPRESSION 1++          # i++
+	... actual loop content ...      # do some stuff
+	4 JUMP 2                         # go back to the loop head
+	5 EXIT_SCOPE                     # exit the loop scope
+*/
+
+/*
 	If condition Snippet
 	0 JUMP_IF_NOT VS(1) > 10 3         # check the if condition, jump over the block if its false
 	1 ENTER_SCOPE                      # enter our scope

@@ -6,37 +6,37 @@ func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator, 
 	case BO_PLUS:
 		switch l.Type {
 		case BT_INT8:
-			v.Value = genericPlus[int8](l.Value, r.Value)
+			genericPlus[int8](l.Value, r.Value, v)
 			return v
 		case BT_INT16:
-			v.Value = genericPlus[int16](l.Value, r.Value)
+			genericPlus[int16](l.Value, r.Value, v)
 			return v
 		case BT_INT32:
-			v.Value = genericPlus[int32](l.Value, r.Value)
+			genericPlus[int32](l.Value, r.Value, v)
 			return v
 		case BT_INT64:
-			v.Value = genericPlus[int64](l.Value, r.Value)
+			genericPlus[int64](l.Value, r.Value, v)
 			return v
 		case BT_UINT8:
-			v.Value = genericPlus[uint8](l.Value, r.Value)
+			genericPlus[uint8](l.Value, r.Value, v)
 			return v
 		case BT_UINT16:
-			v.Value = genericPlus[uint16](l.Value, r.Value)
+			genericPlus[uint16](l.Value, r.Value, v)
 			return v
 		case BT_UINT32:
-			v.Value = genericPlus[uint32](l.Value, r.Value)
+			genericPlus[uint32](l.Value, r.Value, v)
 			return v
 		case BT_UINT64:
-			v.Value = genericPlus[uint64](l.Value, r.Value)
+			genericPlus[uint64](l.Value, r.Value, v)
 			return v
 		case BT_BYTE:
-			v.Value = genericPlus[byte](l.Value, r.Value)
+			genericPlus[byte](l.Value, r.Value, v)
 			return v
 		case BT_FLOAT32:
-			v.Value = genericPlus[float32](l.Value, r.Value)
+			genericPlus[float32](l.Value, r.Value, v)
 			return v
 		case BT_FLOAT64:
-			v.Value = genericPlus[float64](l.Value, r.Value)
+			genericPlus[float64](l.Value, r.Value, v)
 			return v
 		default:
 			panic("invalid type for plus operator")
@@ -82,37 +82,37 @@ func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator, 
 	case BO_MULTIPLY:
 		switch l.Type {
 		case BT_INT8:
-			v.Value = genericMultiply[int8](l.Value, r.Value)
+			genericMultiply[int8](l.Value, r.Value, v.Value)
 			return v
 		case BT_INT16:
-			v.Value = genericMultiply[int16](l.Value, r.Value)
+			genericMultiply[int16](l.Value, r.Value, v.Value)
 			return v
 		case BT_INT32:
-			v.Value = genericMultiply[int32](l.Value, r.Value)
+			genericMultiply[int32](l.Value, r.Value, v.Value)
 			return v
 		case BT_INT64:
-			v.Value = genericMultiply[int64](l.Value, r.Value)
+			genericMultiply[int64](l.Value, r.Value, v.Value)
 			return v
 		case BT_UINT8:
-			v.Value = genericMultiply[uint8](l.Value, r.Value)
+			genericMultiply[uint8](l.Value, r.Value, v.Value)
 			return v
 		case BT_UINT16:
-			v.Value = genericMultiply[uint16](l.Value, r.Value)
+			genericMultiply[uint16](l.Value, r.Value, v.Value)
 			return v
 		case BT_UINT32:
-			v.Value = genericMultiply[uint32](l.Value, r.Value)
+			genericMultiply[uint32](l.Value, r.Value, v.Value)
 			return v
 		case BT_UINT64:
-			v.Value = genericMultiply[uint64](l.Value, r.Value)
+			genericMultiply[uint64](l.Value, r.Value, v.Value)
 			return v
 		case BT_BYTE:
-			v.Value = genericMultiply[byte](l.Value, r.Value)
+			genericMultiply[byte](l.Value, r.Value, v.Value)
 			return v
 		case BT_FLOAT32:
-			v.Value = genericMultiply[float32](l.Value, r.Value)
+			genericMultiply[float32](l.Value, r.Value, v.Value)
 			return v
 		case BT_FLOAT64:
-			v.Value = genericMultiply[float64](l.Value, r.Value)
+			genericMultiply[float64](l.Value, r.Value, v.Value)
 			return v
 		default:
 			panic("invalid type for multiply operator")
@@ -380,7 +380,10 @@ func genericGreater[T Numeric](l any, r any) any {
 }
 
 func genericLesser[T Numeric](l any, r any) any {
-	return l.(T) < r.(T)
+	lptr := l.(*T)
+	rptr := r.(*T)
+	return *lptr < *rptr
+
 }
 
 func genericGreaterEquals[T Numeric](l any, r any) any {
@@ -391,16 +394,19 @@ func genericLesserEquals[T Numeric](l any, r any) any {
 	return l.(T) <= r.(T)
 }
 
-func genericPlus[T Numeric](l any, r any) any {
-	return l.(T) + r.(T)
+func genericPlus[T Numeric](l any, r any, v *BinaryTypedValue) {
+	*v.Value.(*T) = *l.(*T) + *r.(*T)
 }
 
 func genericMinus[T Numeric](l any, r any) any {
 	return l.(T) - r.(T)
 }
 
-func genericMultiply[T Numeric](l any, r any) any {
-	return l.(T) * r.(T)
+func genericMultiply[T Numeric](l any, r any, v any) {
+	vptr := v.(*T)
+	lptr := l.(*T)
+	rptr := r.(*T)
+	*vptr = *lptr * *rptr
 }
 
 func genericDivide[T Numeric](l any, r any) any {

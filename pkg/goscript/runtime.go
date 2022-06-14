@@ -301,7 +301,7 @@ func (r *Runtime) execAssign(operation *BinaryOperation) {
 	symbolRef := operation.Args[0].(int)
 	// get the expression from arg1
 	expression := operation.Args[1].(*Expression)
-	// resolve the expression and  assign the resolution to the referenced symbol
+	// resolve the expression and  assign the resolution to the referenced symbol, without linking it to the expression
 	r.unlinkedAssign(r.SymbolTable[symbolRef], r.ResolveExpression(expression))
 }
 

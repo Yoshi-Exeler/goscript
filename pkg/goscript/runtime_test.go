@@ -84,15 +84,15 @@ func TestAssignFunctionReturnValue(t *testing.T) {
 	5 EXIT_SCOPE                     # exit the loop scope
 */
 func TestLoopAssign(t *testing.T) {
-	// f, err := os.Create("profile.txt")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// pprof.StartCPUProfile(f)
-	// defer pprof.StopCPUProfile()
+	// 	f, err := os.Create("profile.txt")
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	pprof.StartCPUProfile(f)
+	// 	defer pprof.StopCPUProfile()
 	// MemProfileAllocs changes which type of memory to profile
 	// allocations.
-	prof := profile.Start(profile.MemProfile, profile.ProfilePath("."))
+	prof := profile.Start(profile.MemProfileAllocs, profile.ProfilePath("."), profile.MemProfileRate(4096))
 	defer prof.Stop()
 	testProgram := Program{
 		Operations: []BinaryOperation{

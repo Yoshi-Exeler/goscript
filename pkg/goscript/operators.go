@@ -371,38 +371,38 @@ func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator, 
 	}
 }
 
-func genericEquals[T comparable](l any, r any) bool {
+func genericEquals[T comparable](l any, r any) any {
 	return l.(T) == r.(T)
 }
 
-func genericGreater[T Numeric](l any, r any) bool {
+func genericGreater[T Numeric](l any, r any) any {
 	return l.(T) > r.(T)
 }
 
-func genericLesser[T Numeric](l any, r any) bool {
+func genericLesser[T Numeric](l any, r any) any {
 	return l.(T) < r.(T)
 }
 
-func genericGreaterEquals[T Numeric](l any, r any) bool {
+func genericGreaterEquals[T Numeric](l any, r any) any {
 	return l.(T) >= r.(T)
 }
 
-func genericLesserEquals[T Numeric](l any, r any) bool {
+func genericLesserEquals[T Numeric](l any, r any) any {
 	return l.(T) <= r.(T)
 }
 
-func genericPlus[T Numeric](l any, r any) T {
+func genericPlus[T Numeric](l any, r any) any {
 	return l.(T) + r.(T)
 }
 
-func genericMinus[T Numeric](l any, r any) T {
+func genericMinus[T Numeric](l any, r any) any {
 	return l.(T) - r.(T)
 }
 
-func genericMultiply[T Numeric](l any, r any) T {
+func genericMultiply[T Numeric](l any, r any) any {
 	return l.(T) * r.(T)
 }
 
-func genericDivide[T Numeric](l any, r any) float64 {
+func genericDivide[T Numeric](l any, r any) any {
 	return float64(l.(T)) / float64(r.(T))
 }

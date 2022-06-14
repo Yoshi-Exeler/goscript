@@ -65,7 +65,7 @@ const (
 */
 
 func (p *Program) String() string {
-	ret := fmt.Sprintf("BEGIN PROGRAM, %v SYMBOLS\n", len(p.Operations))
+	ret := fmt.Sprintf("BEGIN PROGRAM, %v INSTRUCTIONS\n", len(p.Operations))
 	for pc, op := range p.Operations {
 		ret += fmt.Sprintf("[%v] %v\n", pc, op.String())
 	}

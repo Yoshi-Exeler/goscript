@@ -4,21 +4,14 @@
 func main() {
     let x: string = "db.Connect"
     let y: string = `db.Connect`
-    fn_11b4f5f9_db_Connect()
+    fn_ad923fa3_db_Connect()
 }
-func fn_11b4f5f9_db_Connect() {
-    print("Hello World")
+func fn_ad923fa3_db_doSomeDBStuff() => uint64 {
+    return 0
+}
+
+func fn_ad923fa3_db_Connect() {
     return
-}
-
-func fn_11b4f5f9_db_getMyStruct() => MyStruct {
-    return nil
-}
-
-struct st_11b4f5f9_db_MyStruct {
-    A: string
-    B: int64
-    C: byte
 }
 
 func fn_c40313b4_math_add(a: uint64, b: uint64) => uint64 {
@@ -29,6 +22,6 @@ func fn_e0e93cde_crypto_MakeJWT() {
     return
 }
 
-func fn_f4fc37cd_jwt_GetJWT() {
-    return
+func fn_a9d72907_jwt_getSomeJWT() => uint64 {
+    return 1
 }

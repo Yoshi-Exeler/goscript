@@ -2,7 +2,7 @@ package goscript
 
 // this package will be temporarily used during developement to have easy configuration
 
-var VENDORPATH = "../../vendor"
+var VENDORPATH = "../../not_vendor"
 
 var STDPATH = "../../standard"
 

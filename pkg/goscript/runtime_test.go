@@ -201,7 +201,7 @@ func TestLoopAssign(t *testing.T) {
 	zero2 := uint64(0)
 	zero3 := uint64(0)
 	one := uint64(1)
-	billion := uint64(1000000000)
+	billion := uint64(10000000)
 	falsePtr := false
 	testProgram := Program{
 		Operations: []BinaryOperation{
@@ -245,7 +245,7 @@ func TestLoopAssign(t *testing.T) {
 	fmt.Printf("%+v\n", runtime.SymbolTable)
 	fmt.Printf("%+v\n", runtime.SymbolScopeStack)
 	v := runtime.SymbolTable[1].Value.(*uint64)
-	if *v != 999999999 {
+	if *v != 9999999 {
 		t.Fatalf("symbol should have been 999.999.999 but was %v", *v)
 	}
 	fmt.Printf("%+v\n", *runtime.SymbolTable[1])

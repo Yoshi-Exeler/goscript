@@ -65,6 +65,8 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 		switch operation.Type {
 		case ASSIGN:
 			r.execAssign(operation)
+		case INDEX_ASSIGN:
+			r.execIndexAssign(operation)
 		case CALL:
 			r.execFunctionExpression(operation.Args[0].(*Expression))
 		case BIND:
@@ -82,11 +84,50 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 			r.execJumpIf(operation)
 		case JUMP_IF_NOT:
 			r.execJumpIfNot(operation)
+		case GROW:
+			r.execGrow(operation)
+		case SHRINK:
+			r.execShrink(operation)
 		default:
 			panic(fmt.Sprintf("[GSR] runtime exception, invalid operation type %v", operation.Type))
 		}
 		r.ProgramCounter++
 	}
+}
+
+func (r *Runtime) execGrow(operation *BinaryOperation) {
+	// get the symbol reference from arg0
+	symbolRef := operation.Args[0].(int)
+	// get the amount to grow by from arg1
+	amount := operation.Args[1].(int)
+	// fetch the array from the symbol table
+	array := *r.SymbolTable[symbolRef].Value.(*[]*BinaryTypedValue)
+	// save the last index of the current array
+	prevLast := len(array)
+	// append an empty array of *BinaryTypedValue in a single array grow
+	array = append(array, make([]*BinaryTypedValue, amount)...)
+	// initialize the new values correctly
+	for i := prevLast; i < len(array); i++ {
+		array[i] = &BinaryTypedValue{
+			Type:  array[0].Type,
+			Value: r.defaultValueOf(array[0].Type),
+		}
+	}
+	// save the result back to the symbol table
+	r.SymbolTable[symbolRef].Value = &array
+}
+
+func (r *Runtime) execShrink(operation *BinaryOperation) {
+	// get the symbol reference from arg0
+	symbolRef := operation.Args[0].(int)
+	// get the amount to shrink by from arg1
+	amount := operation.Args[1].(int)
+	// fetch the array from the symbol table
+	array := *r.SymbolTable[symbolRef].Value.(*[]*BinaryTypedValue)
+	// shrink the array
+	newArray := array[:len(array)-amount]
+	// save the result back to the symbol table
+	r.SymbolTable[symbolRef].Value = &newArray
 }
 
 func (r *Runtime) unlinkedAssign(target *BinaryTypedValue, value *BinaryTypedValue) {
@@ -130,6 +171,9 @@ func (r *Runtime) unlinkedAssign(target *BinaryTypedValue, value *BinaryTypedVal
 	case BT_BOOLEAN:
 		// assign the underlying value of value to the underlying value of target
 		*target.Value.(*bool) = *value.Value.(*bool)
+	case BT_ARRAY:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*[]*BinaryTypedValue) = *value.Value.(*[]*BinaryTypedValue)
 	default:
 		panic("unexpected type in unlink")
 	}
@@ -200,6 +244,11 @@ func (r *Runtime) unlink(value *BinaryTypedValue) *BinaryTypedValue {
 	case BT_BOOLEAN:
 		// cast the value's type to its underlying type
 		underlying := *value.Value.(*bool)
+		value.Value = &underlying
+		return value
+	case BT_ARRAY:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*[]*BinaryTypedValue)
 		value.Value = &underlying
 		return value
 	default:
@@ -291,6 +340,9 @@ func (r *Runtime) defaultValuePtrOf(valueType BinaryType) any {
 	case BT_FLOAT64:
 		zero := float64(0)
 		return &zero
+	case BT_ARRAY:
+		zero := []*BinaryTypedValue{}
+		return &zero
 	default:
 		panic("invalid type")
 	}
@@ -305,6 +357,17 @@ func (r *Runtime) execAssign(operation *BinaryOperation) {
 	r.unlinkedAssign(r.SymbolTable[symbolRef], r.ResolveExpression(expression))
 }
 
+func (r *Runtime) execIndexAssign(operation *BinaryOperation) {
+	// get the symbol reference from arg0
+	symbolRef := operation.Args[0].(int)
+	// get the index from arg1
+	index := operation.Args[1].(int)
+	// get the expression from arg1
+	expression := operation.Args[2].(*Expression)
+	// resolve the expression and  assign the resolution to the referenced symbol, without linking it to the expression
+	r.unlinkedAssign(r.SymbolTable[symbolRef].Value.([]*BinaryTypedValue)[index], r.ResolveExpression(expression))
+}
+
 // ResolveExpression will recursively resolve the expression to a typed value.
 func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 	switch e.Operator {
@@ -317,6 +380,8 @@ func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 	case BO_FUNCTION_CALL:
 		// if the expression is a function call, start executing the function until it eventually returns a constant
 		return r.execFunctionExpression(e)
+	case BO_INDEX_INTO:
+		return r.indexIntoExpression(e)
 	default:
 		// otherwise, resolve the left expression
 		left := r.ResolveExpression(e.LeftExpression)
@@ -325,6 +390,14 @@ func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 		// finally apply the operator
 		return applyOperator(left, right, e.Operator, e.Value)
 	}
+}
+
+// indexIntoExpression will index into the following expression, assuming it is an array and has been type checked
+func (r *Runtime) indexIntoExpression(e *Expression) *BinaryTypedValue {
+	// fetch the symbol from the symbol table
+	symbol := r.SymbolTable[e.Ref]
+	// index into the symbol
+	return (*symbol.Value.(*[]*BinaryTypedValue))[e.Value.Value.(int)]
 }
 
 // exec will execute the expression as a function, assuming that it has been type checked before

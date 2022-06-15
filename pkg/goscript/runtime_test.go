@@ -32,6 +32,98 @@ func TestAssignConstant(t *testing.T) {
 	fmt.Printf("%+v\n", *runtime.SymbolTable[1])
 }
 
+func TestAssignArrayConstant(t *testing.T) {
+	eleven := uint8(11)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_ARRAY),
+			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
+				Type:  BT_UINT8,
+				Value: &eleven,
+			}}, BT_ARRAY)),
+			NewReturnValueOp(NewVSymbolExpression(1))},
+		SymbolTableSize: 2,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+	v := *runtime.SymbolTable[1].Value.(*[]*BinaryTypedValue)
+	if *v[0].Value.(*uint8) != 11 {
+		t.Fatalf("symbol should have been 11 but was %v", *v[0].Value.(*uint8))
+	}
+	fmt.Printf("%+v\n", *runtime.SymbolTable[1])
+}
+
+func TestArrayIndexInto(t *testing.T) {
+	eleven := uint8(11)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_ARRAY),
+			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
+				Type:  BT_UINT8,
+				Value: &eleven,
+			}}, BT_ARRAY)),
+			NewBindOp(2, BT_UINT8),
+			NewAssignExpressionOp(2, NewIndexIntoExpression(1, 0)),
+			NewReturnValueOp(NewVSymbolExpression(2))},
+		SymbolTableSize: 4,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+	v := *runtime.SymbolTable[2].Value.(*uint8)
+	if v != 11 {
+		t.Fatalf("symbol should have been 11 but was %v", v)
+	}
+	fmt.Printf("%+v\n", *runtime.SymbolTable[1])
+}
+
+func TestArrayGrow(t *testing.T) {
+	eleven := uint8(11)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_ARRAY),
+			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
+				Type:  BT_UINT8,
+				Value: &eleven,
+			}}, BT_ARRAY)),
+			NewGrowOperation(1, 10),
+			NewReturnValueOp(NewVSymbolExpression(1))},
+		SymbolTableSize: 4,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+	v := *runtime.SymbolTable[1].Value.(*[]*BinaryTypedValue)
+	if len(v) != 11 {
+		t.Fatalf("symbol should have had length 11 but had length %v", len(v))
+	}
+	fmt.Printf("%+v\n", *runtime.SymbolTable[1])
+}
+
+func TestArrayShrink(t *testing.T) {
+	eleven := uint8(11)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_ARRAY),
+			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
+				Type:  BT_UINT8,
+				Value: &eleven,
+			}, &BinaryTypedValue{}}, BT_ARRAY)),
+			NewShrinkOperation(1, 1),
+			NewReturnValueOp(NewVSymbolExpression(1))},
+		SymbolTableSize: 4,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+	v := *runtime.SymbolTable[1].Value.(*[]*BinaryTypedValue)
+	if len(v) != 1 {
+		t.Fatalf("symbol should have had length 1 but had length %v", len(v))
+	}
+	fmt.Printf("%+v\n", *runtime.SymbolTable[1])
+}
+
 /*
 	func main() {
 		let a: uint8 = getConst()

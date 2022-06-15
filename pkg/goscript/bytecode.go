@@ -10,15 +10,18 @@ type Program struct {
 type OperationType byte
 
 const (
-	ASSIGN      OperationType = 1 // assign an expression resolution to a symbol
-	BIND        OperationType = 2 // binds a symbol to the current scope
-	RETURN      OperationType = 3 // return a value
-	CALL        OperationType = 4 // call a function without assigning its return value to anything
-	ENTER_SCOPE OperationType = 5 // enters a a new scope
-	EXIT_SCOPE  OperationType = 6 // exits the current scope
-	JUMP        OperationType = 7 // jumps to the address in arg0
-	JUMP_IF     OperationType = 8 // jumps to the address in arg1 if the condition in arg0 is true
-	JUMP_IF_NOT OperationType = 9 // jumps to the address in arg1 if the condition in arg0 is false
+	ASSIGN       OperationType = 1  // assign an expression resolution to a symbol
+	INDEX_ASSIGN OperationType = 2  // assign an expression resolution to a an index of an array symbol
+	BIND         OperationType = 3  // binds a symbol to the current scope
+	RETURN       OperationType = 4  // return a value
+	CALL         OperationType = 5  // call a function without assigning its return value to anything
+	ENTER_SCOPE  OperationType = 6  // enters a a new scope
+	EXIT_SCOPE   OperationType = 7  // exits the current scope
+	JUMP         OperationType = 8  // jumps to the address in arg0
+	JUMP_IF      OperationType = 9  // jumps to the address in arg1 if the condition in arg0 is true
+	JUMP_IF_NOT  OperationType = 10 // jumps to the address in arg1 if the condition in arg0 is false
+	GROW         OperationType = 11 // grows the array symbol in arg0 by the amount of indices in arg1
+	SHRINK       OperationType = 12 // shrinks the array symbol in arg0 by the amount of indices in arg1
 )
 
 /*
@@ -76,6 +79,8 @@ func (b *BinaryOperation) String() string {
 	switch b.Type {
 	case ASSIGN:
 		return fmt.Sprintf("ASSIGN SYM(%v) %v", b.Args[0], b.Args[1].(*Expression))
+	case INDEX_ASSIGN:
+		return fmt.Sprintf("INDEX_ASSIGN SYM(%v) IDX(%v) %v", b.Args[0], b.Args[1], b.Args[2].(*Expression))
 	case BIND:
 		return fmt.Sprintf("BIND SYM(%v) %v", b.Args[0], b.Args[1].(BinaryType).String())
 	case RETURN:
@@ -92,6 +97,10 @@ func (b *BinaryOperation) String() string {
 		return fmt.Sprintf("JUMP_IF %v [%v]", b.Args[0].(*Expression), b.Args[1].(int))
 	case JUMP_IF_NOT:
 		return fmt.Sprintf("JUMP_IF_NOT %v [%v]", b.Args[0].(*Expression), b.Args[1].(int))
+	case GROW:
+		return fmt.Sprintf("GROW SYM(%v) %v", b.Args[0].(int), b.Args[1].(int))
+	case SHRINK:
+		return fmt.Sprintf("SHRINK SYM(%v) %v", b.Args[0].(int), b.Args[1].(int))
 	default:
 		return "INVALID OP"
 	}
@@ -106,6 +115,20 @@ func NewAssignExpressionOp(symbolRef int, expression *Expression) BinaryOperatio
 	return BinaryOperation{
 		Type: ASSIGN,
 		Args: []any{symbolRef, expression},
+	}
+}
+
+func NewGrowOperation(symbolRef int, amount int) BinaryOperation {
+	return BinaryOperation{
+		Type: GROW,
+		Args: []any{symbolRef, amount},
+	}
+}
+
+func NewShrinkOperation(symbolRef int, amount int) BinaryOperation {
+	return BinaryOperation{
+		Type: SHRINK,
+		Args: []any{symbolRef, amount},
 	}
 }
 
@@ -184,6 +207,7 @@ const (
 	BT_ANY     BinaryType = 14
 	BT_STRUCT  BinaryType = 15
 	BT_BOOLEAN BinaryType = 16
+	BT_ARRAY   BinaryType = 17
 )
 
 func (b BinaryType) String() string {
@@ -220,6 +244,8 @@ func (b BinaryType) String() string {
 		return fmt.Sprint("STRUCT")
 	case BT_BOOLEAN:
 		return fmt.Sprint("BOOLEAN")
+	case BT_ARRAY:
+		return fmt.Sprint("ARRAY")
 	default:
 		return fmt.Sprint("invalid type")
 	}
@@ -245,6 +271,7 @@ const (
 	BO_LESSER         BinaryOperator = 10
 	BO_GREATER_EQUALS BinaryOperator = 11
 	BO_LESSER_EQUALS  BinaryOperator = 12
+	BO_INDEX_INTO     BinaryOperator = 13 // indexes into an array
 )
 
 type BuiltinFunction byte
@@ -316,6 +343,31 @@ func NewConstantExpression(value any, valueType BinaryType) *Expression {
 		Operator:        BO_CONSTANT,
 		LeftExpression:  nil,
 		RightExpression: nil,
+	}
+}
+
+func NewArrayExpression(elements []*BinaryTypedValue, valueType BinaryType) *Expression {
+	return &Expression{
+		Value: &BinaryTypedValue{
+			Value: &elements,
+			Type:  valueType,
+		},
+		Operator:        BO_CONSTANT,
+		LeftExpression:  nil,
+		RightExpression: nil,
+	}
+}
+
+func NewIndexIntoExpression(symbol int, index int) *Expression {
+	return &Expression{
+		LeftExpression:  nil,
+		RightExpression: nil,
+		Operator:        BO_INDEX_INTO,
+		Value: &BinaryTypedValue{
+			Type:  BT_INT64,
+			Value: index,
+		},
+		Ref: symbol,
 	}
 }
 

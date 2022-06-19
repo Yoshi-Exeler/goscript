@@ -106,6 +106,42 @@ func (b *BinaryOperation) String() string {
 	}
 }
 
+func (bv *BinaryTypedValue) String() string {
+	switch bv.Type {
+	case BT_INT8:
+		// return the derefecrenced value
+		return fmt.Sprint(*bv.Value.(*int8))
+	case BT_INT16:
+		return fmt.Sprint(*bv.Value.(*int16))
+	case BT_INT32:
+		return fmt.Sprint(*bv.Value.(*int32))
+	case BT_INT64:
+		return fmt.Sprint(*bv.Value.(*int64))
+	case BT_UINT8:
+		return fmt.Sprint(*bv.Value.(*uint8))
+	case BT_UINT16:
+		return fmt.Sprint(*bv.Value.(*uint16))
+	case BT_UINT32:
+		return fmt.Sprint(*bv.Value.(*uint32))
+	case BT_UINT64:
+		return fmt.Sprint(*bv.Value.(*uint64))
+	case BT_BYTE:
+		return fmt.Sprint(*bv.Value.(*byte))
+	case BT_FLOAT32:
+		return fmt.Sprint(*bv.Value.(*float32))
+	case BT_FLOAT64:
+		return fmt.Sprint(*bv.Value.(*float64))
+	case BT_STRING:
+		return fmt.Sprint(*bv.Value.(*string))
+	case BT_BOOLEAN:
+		return fmt.Sprint(*bv.Value.(*bool))
+	case BT_ARRAY:
+		return fmt.Sprint("[...]")
+	default:
+		panic("unexpected type in unlink")
+	}
+}
+
 type BinaryOperation struct {
 	Type OperationType // which operation should be performed
 	Args []any         // the arguments passed to the operation
@@ -274,6 +310,31 @@ const (
 	BO_INDEX_INTO     BinaryOperator = 13 // indexes into an array
 )
 
+func (b BinaryOperator) String() string {
+	switch b {
+	case BO_PLUS:
+		return "+"
+	case BO_MINUS:
+		return "-"
+	case BO_MULTIPLY:
+		return "*"
+	case BO_DIVIDE:
+		return "/"
+	case BO_EQUALS:
+		return "="
+	case BO_GREATER:
+		return ">"
+	case BO_LESSER:
+		return "<"
+	case BO_GREATER_EQUALS:
+		return ">="
+	case BO_LESSER_EQUALS:
+		return "<="
+	default:
+		panic("unknown operator")
+	}
+}
+
 type BuiltinFunction byte
 
 const (
@@ -301,13 +362,21 @@ type Expression struct {
 func (e *Expression) String() string {
 	switch e.Operator {
 	case BO_CONSTANT:
-		return fmt.Sprintf("CONST(%v) ", e.Value.Value)
+		return fmt.Sprintf("CONST(%v)", e.Value.String())
 	case BO_FUNCTION_CALL:
-		return fmt.Sprintf("FUNC[%v]%v", e.Ref, e.Args)
+		return fmt.Sprintf("FUNC[%v](%v)", e.Ref, e.Args)
+	case BO_INDEX_INTO:
+		return fmt.Sprintf("SYM(%v)[%v]", e.Ref, e.Value.String())
 	case BO_VSYMBOL:
 		return fmt.Sprintf("SYM(%v)", e.Ref)
 	default:
-		return fmt.Sprint("EXPR")
+		// if this is not a terminating node, we must recursively travers the expression tree
+		expStr := e.LeftExpression.String() + " "
+		// append the operator string
+		expStr += e.Operator.String()
+		// append the right expression string
+		expStr += " " + e.RightExpression.String()
+		return expStr
 	}
 }
 
@@ -358,14 +427,14 @@ func NewArrayExpression(elements []*BinaryTypedValue, valueType BinaryType) *Exp
 	}
 }
 
-func NewIndexIntoExpression(symbol int, index int) *Expression {
+func NewIndexIntoExpression(symbol int, index int64) *Expression {
 	return &Expression{
 		LeftExpression:  nil,
 		RightExpression: nil,
 		Operator:        BO_INDEX_INTO,
 		Value: &BinaryTypedValue{
 			Type:  BT_INT64,
-			Value: index,
+			Value: &index,
 		},
 		Ref: symbol,
 	}

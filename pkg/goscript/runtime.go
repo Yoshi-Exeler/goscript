@@ -397,7 +397,7 @@ func (r *Runtime) indexIntoExpression(e *Expression) *BinaryTypedValue {
 	// fetch the symbol from the symbol table
 	symbol := r.SymbolTable[e.Ref]
 	// index into the symbol
-	return (*symbol.Value.(*[]*BinaryTypedValue))[e.Value.Value.(int)]
+	return (*symbol.Value.(*[]*BinaryTypedValue))[*e.Value.Value.(*int64)]
 }
 
 // exec will execute the expression as a function, assuming that it has been type checked before

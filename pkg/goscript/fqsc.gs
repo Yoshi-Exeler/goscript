@@ -9,7 +9,6 @@ func main() {
 func fn_ad923fa3_db_doSomeDBStuff() => uint64 {
     return 0
 }
-
 func fn_ad923fa3_db_Connect() {
     return
 }

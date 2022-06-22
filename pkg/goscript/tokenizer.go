@@ -1,6 +1,7 @@
 package goscript
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 )
@@ -111,6 +112,50 @@ func isKeyword(token string) bool {
 	return false
 }
 
+type UnparsedFunction struct {
+	Name    string
+	Args    string
+	Returns string
+	Body    string
+}
+
 // Tokenizer holds all the context required during tokenization of goscript source code
 type Tokenizer struct {
+	funcNameToFunc map[string]*FunctionDefinition
+	symbolToIndex  map[string]*int
+	indexToType    map[int]*BinaryType
+}
+
+// Parse is the main entrypoint for the tokenizer
+func (t *Tokenizer) parse(source string) *IntermediateProgram {
+	// extract the function definitions from the source code
+	functions := t.findFunctions(source)
+	// output our function definitions
+	fmt.Printf("%+v\n", functions)
+	//
+	return nil
+}
+
+func (t *Tokenizer) splitToLines(source string) []string {
+	return strings.Split(source, "\n")
+}
+
+var FUNC_REGEX = regexp.MustCompile(`(?msU)func ([a-zA-Z_]{1}[a-zA-Z0-9_]*)\((.*)\) (?:=> ([a-zA-Z0-9]*) )?{\n(.*)}`)
+
+func (t *Tokenizer) findFunctions(source string) []UnparsedFunction {
+	funcs := []UnparsedFunction{}
+	matches := FUNC_REGEX.FindAllStringSubmatch(source, -1)
+	for _, match := range matches {
+		funcs = append(funcs, UnparsedFunction{
+			Name:    match[1],
+			Args:    match[2],
+			Returns: match[3],
+			Body:    match[4],
+		})
+	}
+	return funcs
+}
+
+func (t *Tokenizer) parseLineOperation(line string) *Operation {
+	return nil
 }

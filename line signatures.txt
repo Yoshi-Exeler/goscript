@@ -1,0 +1,9 @@
+List of all valid line signatures:
+if <boolean expression> {
+}
+let <symbol>: <type> = <expression>
+<symbol> = <expression>
+for let <symbol> = <numeric expression>; <boolean expression>; <symbol++||symbol--> {
+foreach let <symbol> in <iterable symbol> {
+return <expression?>
+break

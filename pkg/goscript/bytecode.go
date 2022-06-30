@@ -244,6 +244,7 @@ const (
 	BT_STRUCT  BinaryType = 15
 	BT_BOOLEAN BinaryType = 16
 	BT_ARRAY   BinaryType = 17
+	BT_NOTYPE  BinaryType = 18
 )
 
 func (b BinaryType) String() string {

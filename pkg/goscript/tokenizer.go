@@ -32,14 +32,15 @@ var PRIMITIVES = [...]GSPrimitive{GPS_INT8, GSP_INT16, GSP_INT32, GSP_INT64, GSP
 type GSKeyword string
 
 const (
-	FOR        GSKeyword = "for"
-	FOREACH    GSKeyword = "foreach"
-	LET        GSKeyword = "let"
-	FUNC       GSKeyword = "func"
-	GSK_RETURN GSKeyword = "return"
-	STRUCT     GSKeyword = "struct"
-	CONST      GSKeyword = "const"
-	BREAK      GSKeyword = "break"
+	FOR             GSKeyword = "for"
+	FOREACH         GSKeyword = "foreach"
+	LET             GSKeyword = "let"
+	FUNC            GSKeyword = "func"
+	GSK_RETURN      GSKeyword = "return"
+	STRUCT          GSKeyword = "struct"
+	CONST           GSKeyword = "const"
+	BREAK           GSKeyword = "break"
+	CLOSING_BRACKET GSKeyword = "}"
 	// these will be implemented once the compiler generally works
 	// EXPORTED GSKeyword = "exported"
 	// SWITCH   GSKeyword = "switch"
@@ -51,7 +52,7 @@ const (
 )
 
 // iterable list of all keywords
-var KEYWORDS = [...]GSKeyword{FOR, FOREACH, LET, FUNC, GSK_RETURN, STRUCT, CONST, BREAK}
+var KEYWORDS = [...]GSKeyword{FOR, FOREACH, LET, FUNC, GSK_RETURN, STRUCT, CONST, BREAK, CLOSING_BRACKET}
 
 // regex that matches any symbol in goscript
 var SYMBOL_NAME = regexp.MustCompile(`(?m)[a-zA-Z_]{1}[a-zA-Z0-9_]*`)
@@ -152,33 +153,233 @@ func (t *Tokenizer) parse(source string) *IntermediateProgram {
 }
 
 func (t *Tokenizer) parseFunction(fnc UnparsedFunction) *FunctionDefinition {
-	ret := FunctionDefinition{
-		Returns: BT_NOTYPE,
-	}
+	ret := FunctionDefinition{}
 	// begin by parsing the functions arguments if any exist
 	if len(fnc.Args) > 0 {
 		ret.Accepts = t.parseArguments(fnc.Args)
 	}
 	// parse the return type if the function has one
 	if len(fnc.Returns) > 0 {
-		ret.Returns = t.parseReturnType(fnc.Returns)
+		ret.Returns = t.parseTypeToken(fnc.Returns, true)
 	}
 	// finally, parse the body of the function
 	ret.Operations = t.parseFunctionBody(fnc.Body)
 	return &ret
 }
 
-func (t *Tokenizer) parseFunctionBody(body string) []*Operation {
-	return nil
+func (t *Tokenizer) parseFunctionBody(body string) []*IntermediateOperation {
+	ret := []*IntermediateOperation{}
+	// parse each line of the function body
+	lines := strings.Split(body, "\n")
+	for _, line := range lines {
+		op := t.parseLine(line)
+		ret = append(ret, &op)
+	}
+	return ret
 }
 
-func (t *Tokenizer) parseTypeToken(token string) IntetmediateType {
-	if strings.HasPrefix(clean(token), "[]") {
-		return BT_ARRAY
+func (t *Tokenizer) parseLine(line string) IntermediateOperation {
+	tokens := strings.Split(line, " ")
+	// if this line is empty return a no-op which we will delete later in optimization
+	if len(tokens) == 0 {
+		return IntermediateOperation{
+			Type: IM_NOP,
+		}
+	}
+	// enter keyword parsing mode if the line begins with a keyword
+	if isKeyword(tokens[0]) {
+		return t.parseKeyWordLine(line, tokens[0])
+	}
+	// otherwise resolve this line in pure expression mode
+	return t.parseExpressionLine(line)
+}
+
+func (t *Tokenizer) parseKeyWordLine(line string, keyword string) IntermediateOperation {
+	switch keyword {
+	case "let":
+		return t.parseLetLine(line)
+	case "for":
+		return t.parseForLine(line)
+	case "foreach":
+		return t.parseForeachLine(line)
+	case "break":
+		return t.parseBreakLine(line)
+	case "return":
+		return t.parseReturnLine(line)
+	case "}":
+		return t.parseClosingBracketLine(line)
+	default:
+		panic(fmt.Sprintf("encountered unknown keyword %v", keyword))
 	}
 }
 
-func (t *Tokenizer) parseReturnType(returns string) BinaryType {
+func (t *Tokenizer) parseExpressionLine(line string) IntermediateOperation {
+	return IntermediateOperation{
+		Type: IM_EXPRESSION,
+		Args: []any{t.parseExpressionArguments(line)},
+	}
+}
+
+func (t *Tokenizer) parseExpressionArguments(line string) *Expression {
+	return &Expression{}
+}
+
+// matches let myvar: string = "dfg" lines
+// G1 is the variable name
+// G2 is the variable type
+// G3 is the optional value that is assigned
+var LET_LINE_REGEX = regexp.MustCompile(`(?m)let ([a-zA-z_]{1}[a-zA-Z0-9-_]*): ([a-zA-Z0-9]*)([ \n]= (.*))?`)
+
+func (t *Tokenizer) parseLetLine(line string) IntermediateOperation {
+	ret := IntermediateOperation{
+		Type: IM_ASSIGN,
+	}
+	// use the let line regex to extract the various components of a let line
+	matches := LET_LINE_REGEX.FindStringSubmatch(line)
+	if len(matches) != 3 && len(matches) != 4 {
+		panic(fmt.Sprintf("could not parse assignement, invalid number of matches (expected 3 || 4, got %v)", len(matches)))
+	}
+	// assign the symbol name to arg0
+	ret.Args[0] = matches[1]
+	// get the type of the symbol and assign it to arg1
+	parsedType := t.parseTypeToken(line, false)
+	ret.Args[1] = parsedType
+	// if there is a G3 match save it, otherwise determine the default value for this type
+	if len(matches) == 4 {
+		ret.Args[2] = t.parseExpressionArguments(matches[3])
+	} else {
+		ret.Args[2] = t.generateDefaultValueForType(parsedType)
+	}
+	return ret
+}
+
+func (t *Tokenizer) generateDefaultValueForType(intermType IntermediateType) IntermediateExpression {
+	return IntermediateExpression{}
+}
+
+// matches for loop heads 'for i: int32 = 0; i < 10; i++ {'
+// G1 is the loop iterator name
+// G2 is the loop iterator type
+// G3 is the initial value of the iterator
+// G4 is the loop condition
+// G5 is the loop action (increment or decrement)
+var FOR_LINE_REGEX = regexp.MustCompile(`(?mU)for let ([a-zA-z_]{1}[a-zA-Z0-9-_]*): ([a-zA-Z0-9]*) = (.*); (.*);(.*) {`)
+
+func (t *Tokenizer) parseForLine(line string) IntermediateOperation {
+	ret := IntermediateOperation{
+		Type: IM_FOR,
+	}
+	// use the let line regex to extract the various components of a let line
+	matches := FOR_LINE_REGEX.FindStringSubmatch(line)
+	if len(matches) != 6 {
+		panic(fmt.Sprintf("unexpected number of segments in for loop match (expected 6 but got %v)", len(matches)))
+	}
+	// save the name of the iterator to arg0
+	ret.Args[0] = matches[1]
+	// parse the iterator type and save it to arg1
+	parsedType := t.parseTypeToken(matches[2], false)
+	ret.Args[1] = parsedType
+	// save the initial value of the iterator to arg3
+	parsedExpr := t.parseExpressionArguments(matches[3])
+	ret.Args[2] = parsedExpr
+	// parse the loop condition into an expression
+	loopCond := t.parseExpressionArguments(matches[4])
+	ret.Args[3] = loopCond
+	increment := false
+	// detect wether we are incrementing or decrementing
+	if strings.Contains(matches[5], "++") {
+		increment = true
+		ret.Args[4] = &increment
+	} else if strings.Contains(matches[5], "--") {
+		ret.Args[4] = &increment
+	} else {
+		ret.Args[4] = nil
+	}
+	// return the op
+	return ret
+}
+
+// matches foreach loop heads 'foreach element in list {'
+// GS1 matches the local loop variable name
+// GS2 martches the list being iterated over
+var FOREACH_LINE_REGEX = regexp.MustCompile(`(?mU)foreach ([a-zA-z_]{1}[a-zA-Z0-9-_]*) in ([a-zA-z_]{1}[a-zA-Z0-9-_]*) {`)
+
+func (t *Tokenizer) parseForeachLine(line string) IntermediateOperation {
+	ret := IntermediateOperation{
+		Type: IM_FOREACH,
+	}
+	// use the let line regex to extract the various components of a let line
+	matches := FOREACH_LINE_REGEX.FindStringSubmatch(line)
+	if len(matches) != 3 {
+		panic(fmt.Sprintf("unexpected number of segments in foreach loop match (expected 3 but got %v)", len(matches)))
+	}
+	// save the name of the local iteration symbol to arg0
+	ret.Args[0] = matches[1]
+	// save the name of the iterable symbol to arg1
+	ret.Args[1] = matches[2]
+	// yield return
+	return ret
+}
+
+func (t *Tokenizer) parseBreakLine(line string) IntermediateOperation {
+	return IntermediateOperation{
+		Type: IM_BREAK,
+		Args: []any{},
+	}
+}
+
+// match return statements 'return test'
+// G1 matches the name of the symbol being returned
+var RETURN_LINE_REGEX = regexp.MustCompile(`(?m)return( [a-zA-z_]{1}[a-zA-Z0-9-_]*)?\n`)
+
+func (t *Tokenizer) parseReturnLine(line string) IntermediateOperation {
+	ret := IntermediateOperation{
+		Type: IM_RETURN,
+	}
+	// use the let line regex to extract the various components of a let line
+	matches := FOREACH_LINE_REGEX.FindStringSubmatch(line)
+	if len(matches) != 6 {
+		panic(fmt.Sprintf("unexpected number of segments in foreach loop match (expected 6 but got %v)", len(matches)))
+	}
+	// save the name of the symbol being returned to arg0
+	ret.Args[0] = matches[1]
+	// yield the op
+	return ret
+}
+
+func (t *Tokenizer) parseClosingBracketLine(line string) IntermediateOperation {
+	return IntermediateOperation{
+		Type: IM_CLOSING_BRACKET,
+		Args: []any{},
+	}
+}
+
+func (t *Tokenizer) parseTypeToken(token string, allowNoType bool) IntermediateType {
+	var ret IntermediateType
+	// first, check composition type modifiers and recusively resolve
+	if strings.HasPrefix(token, "[]") {
+		trim := strings.TrimPrefix(token, "[]")
+		subType := t.parseTypeToken(trim, allowNoType)
+		// abort the cascade down the three if we encounter a NOTYPE
+		if subType.Type == BT_NOTYPE {
+			ret.Type = BT_NOTYPE
+			ret.Kind = SINGULAR
+			return ret
+		}
+		ret.SubType = &subType
+		ret.Kind = ARRAY
+		return ret
+	}
+	singularType := t.singularTokenToSingular(token)
+	if singularType == BT_NOTYPE && !allowNoType {
+		panic(fmt.Sprintf("encountered invalid type %v", token))
+	}
+	ret.Type = singularType
+	ret.Kind = SINGULAR
+	return ret
+}
+
+func (t *Tokenizer) singularTokenToSingular(returns string) BinaryType {
 	switch clean(returns) {
 	case "int8":
 		return BT_INT8
@@ -206,15 +407,26 @@ func (t *Tokenizer) parseReturnType(returns string) BinaryType {
 		return BT_STRING
 	case "bool":
 		return BT_BOOLEAN
-	case BT_ARRAY:
-		// assign the underlying value of value to the underlying value of target
-		*target.Value.(*[]*BinaryTypedValue) = *value.Value.(*[]*BinaryTypedValue)
 	}
 	return BT_NOTYPE
 }
 
-func (t *Tokenizer) parseArguments(args string) []*Expression {
-	return nil
+func (t *Tokenizer) parseArguments(args string) []IntermediateVar {
+	ret := []IntermediateVar{}
+	// split the args into comma separated list of variables and names
+	varsWithNames := strings.Split(args, ",")
+	for _, varWithName := range varsWithNames {
+		words := strings.Split(varWithName, " ")
+		if len(words) != 2 {
+			panic(fmt.Sprintf("typed variable token %v has an invalid segment length (expected 2 but got %v)", varWithName, len(words)))
+		}
+		current := IntermediateVar{
+			Name: words[0],
+			Type: t.parseTypeToken(words[1], false),
+		}
+		ret = append(ret, current)
+	}
+	return ret
 }
 
 func (t *Tokenizer) splitToLines(source string) []string {

@@ -33,8 +33,16 @@ return 1
 }
 `
 
-func TestFindFunctions(t *testing.T) {
+// func TestFindFunctions(t *testing.T) {
+// 	tokenizer := &Tokenizer{}
+// 	interm := tokenizer.parse(stub1)
+// 	fmt.Printf("%+v\n", interm)
+// }
+
+func TestParseExprSimple(t *testing.T) {
 	tokenizer := &Tokenizer{}
-	interm := tokenizer.parse(stub1)
-	fmt.Printf("%+v\n", interm)
+	expr := tokenizer.parseExpression(`5==5 -      9*2.5 +11.5   2/1+ "this is a string+-*/" +1`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	fmt.Printf("%+v\n", val.Value.(*uint64))
 }

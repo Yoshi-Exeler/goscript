@@ -2,6 +2,7 @@ package goscript
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 	"unicode"
@@ -229,19 +230,97 @@ func (t *Tokenizer) parseKeyWordLine(line string, keyword string) IntermediateOp
 func (t *Tokenizer) parseExpressionLine(line string) IntermediateOperation {
 	return IntermediateOperation{
 		Type: IM_EXPRESSION,
-		Args: []any{t.parseExpressionArguments(line)},
+		Args: []any{t.parseExpression(line)},
 	}
 }
 
-func (t *Tokenizer) parseExpressionArguments(line string) *Expression {
-	val := "EXPRESSION_NOT_IMPLEMENTED"
-	return &Expression{
-		Operator: BO_CONSTANT,
-		Value: &BinaryTypedValue{
-			Type:  BT_STRING,
-			Value: &val,
-		},
+func (t *Tokenizer) parseExpression(expr string) *Expression {
+	tokens := t.tokenizeExpression(expr)
+	for idx, tkn := range tokens {
+		fmt.Printf("[%v]:%v\n", idx, tkn)
 	}
+	return nil
+}
+
+func (t *Tokenizer) tokenizeExpression(expr string) []string {
+	res := []string{}
+	current := ""
+	inString := false
+	lastChunkIsOp := false
+	for i := 0; i < len(expr); i++ {
+		// if we read a quote while in string, commit the current string as a chunk
+		if string(expr[i]) == `"` && inString {
+			current += `"`
+			if len(current) > 0 {
+				res = append(res, current)
+			}
+			current = ""
+			lastChunkIsOp = false
+			inString = false
+			continue
+		}
+		// if we read a quote while not in a string, we enter a string
+		if string(expr[i]) == `"` && !inString {
+			inString = true
+			current += `"`
+			lastChunkIsOp = false
+			continue
+		}
+		// if we read a space while not in a string, we commit the current chunk
+		if string(expr[i]) == ` ` && !inString {
+			if len(current) > 0 {
+				res = append(res, current)
+				current = ""
+			}
+			lastChunkIsOp = false
+			continue
+		}
+		// if we read an operator while not in a string, commit the current chunk (max operator length is 2 chars)
+		if !inString {
+			if charIsOperator(string(expr[i])) {
+				if len(current) > 0 {
+					res = append(res, current)
+				}
+				res = append(res, string(expr[i]))
+				current = ""
+				lastChunkIsOp = true
+				continue
+			}
+			if len(expr)-i+1 > 2 && charIsOperator(string(expr[i])+string(expr[i+1])) {
+				if len(current) > 0 {
+					res = append(res, current)
+				}
+				res = append(res, string(expr[i])+string(expr[i+1]))
+				current = ""
+				i++
+				lastChunkIsOp = true
+				continue
+			}
+		}
+		// if no condition applies, just append the current char to the current segment
+		current += string(expr[i])
+	}
+	if len(current) > 0 {
+		lastChunkIsOp = false
+		res = append(res, current)
+	}
+	if inString {
+		log.Fatalf("invalid expression. string was not terminated. expr: %v", expr)
+	}
+	if lastChunkIsOp {
+		log.Fatalf("invalid expression. expression cannot end with an operator. expr: %v", expr)
+	}
+	return res
+}
+
+func charIsOperator(c string) bool {
+	ops := []string{"+", "-", "*", "/", "!", "==", "!=", ">", "<", ">=", "<="}
+	for _, op := range ops {
+		if c == op {
+			return true
+		}
+	}
+	return false
 }
 
 // matches let myvar: string = "dfg" lines
@@ -267,7 +346,7 @@ func (t *Tokenizer) parseLetLine(line string) IntermediateOperation {
 	ret.Args[1] = parsedType
 	// if there is a G3 match save it, otherwise determine the default value for this type
 	if len(matches) == 4 {
-		ret.Args[2] = t.parseExpressionArguments(matches[3])
+		ret.Args[2] = t.parseExpression(matches[3])
 	} else {
 		ret.Args[2] = t.generateDefaultValueForType(parsedType)
 	}
@@ -302,10 +381,10 @@ func (t *Tokenizer) parseForLine(line string) IntermediateOperation {
 	parsedType := t.parseTypeToken(matches[2], false)
 	ret.Args[1] = parsedType
 	// save the initial value of the iterator to arg3
-	parsedExpr := t.parseExpressionArguments(matches[3])
+	parsedExpr := t.parseExpression(matches[3])
 	ret.Args[2] = parsedExpr
 	// parse the loop condition into an expression
-	loopCond := t.parseExpressionArguments(matches[4])
+	loopCond := t.parseExpression(matches[4])
 	ret.Args[3] = loopCond
 	increment := false
 	// detect wether we are incrementing or decrementing

@@ -1,5 +1,7 @@
 package goscript
 
+import "fmt"
+
 type IntermediateProgram struct {
 	Entrypoint string
 	Functions  []*FunctionDefinition
@@ -50,6 +52,34 @@ type FunctionDefinition struct {
 	Accepts    []IntermediateVar
 	Returns    IntermediateType
 	Operations []*IntermediateOperation
+}
+
+func (f *FunctionDefinition) String() string {
+	accepts := ""
+	for _, accs := range f.Accepts {
+		accepts += fmt.Sprintf("[%v]", accs)
+	}
+	ops := "\n"
+	for _, op := range f.Operations {
+		ops += "  Operation"
+		if op == nil {
+			ops += "[EMPTY]\n"
+		} else {
+			ops += fmt.Sprintf("[%v]", op.Type)
+			ops += "("
+			for _, arg := range op.Args {
+				if arg != nil {
+					ops += fmt.Sprintf("%v, ", arg)
+				}
+			}
+			ops += ")\n"
+		}
+	}
+	return fmt.Sprintf(`
+Name: %v
+Accepts: %v
+Returns: %v
+Operations: %v`, f.Name, accepts, f.Returns, ops)
 }
 
 type VSymbol struct {

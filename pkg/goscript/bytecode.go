@@ -88,9 +88,9 @@ func (b *BinaryOperation) String() string {
 	case CALL:
 		return fmt.Sprintf("CALL %v", b.Args[0].(*Expression))
 	case ENTER_SCOPE:
-		return fmt.Sprintf("ENTER_SCOPE")
+		return "ENTER_SCOPE"
 	case EXIT_SCOPE:
-		return fmt.Sprintf("EXIT_SCOPE")
+		return "EXIT_SCOPE"
 	case JUMP:
 		return fmt.Sprintf("JUMP [%v]", b.Args[0].(int))
 	case JUMP_IF:
@@ -136,7 +136,7 @@ func (bv *BinaryTypedValue) String() string {
 	case BT_BOOLEAN:
 		return fmt.Sprint(*bv.Value.(*bool))
 	case BT_ARRAY:
-		return fmt.Sprint("[...]")
+		return "[...]"
 	default:
 		panic("unexpected type in unlink")
 	}
@@ -250,41 +250,41 @@ const (
 func (b BinaryType) String() string {
 	switch b {
 	case BT_INT8:
-		return fmt.Sprint("INT8")
+		return "INT8"
 	case BT_INT16:
-		return fmt.Sprint("INT16")
+		return "INT16"
 	case BT_INT32:
-		return fmt.Sprint("INT32")
+		return "INT32"
 	case BT_INT64:
-		return fmt.Sprint("INT64")
+		return "INT64"
 	case BT_UINT8:
-		return fmt.Sprint("UINT8")
+		return "UINT8"
 	case BT_UINT16:
-		return fmt.Sprint("UINT16")
+		return "UINT16"
 	case BT_UINT32:
-		return fmt.Sprint("UINT32")
+		return "UINT32"
 	case BT_UINT64:
-		return fmt.Sprint("UINT64")
+		return "UINT64"
 	case BT_STRING:
-		return fmt.Sprint("STRING")
+		return "STRING"
 	case BT_CHAR:
-		return fmt.Sprint("CHAR")
+		return "CHAR"
 	case BT_BYTE:
-		return fmt.Sprint("BYTE")
+		return "BYTE"
 	case BT_FLOAT32:
-		return fmt.Sprint("FLOAT32")
+		return "FLOAT32"
 	case BT_FLOAT64:
-		return fmt.Sprint("FLOAT64")
+		return "FLOAT64"
 	case BT_ANY:
-		return fmt.Sprint("ANY")
+		return "ANY"
 	case BT_STRUCT:
-		return fmt.Sprint("STRUCT")
+		return "STRUCT"
 	case BT_BOOLEAN:
-		return fmt.Sprint("BOOLEAN")
+		return "BOOLEAN"
 	case BT_ARRAY:
-		return fmt.Sprint("ARRAY")
+		return "ARRAY"
 	default:
-		return fmt.Sprint("invalid type")
+		return "invalid type"
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // GSPrimitive is an enum of all primitives in goscript
@@ -140,16 +141,18 @@ type TokenizerContext struct {
 
 // Parse is the main entrypoint for the tokenizer
 func (t *Tokenizer) parse(source string) *IntermediateProgram {
+	ret := &IntermediateProgram{}
 	// extract the function definitions from the source code
 	functions := t.findFunctions(source)
 	// output our function definitions
-	fmt.Printf("Funcs:%+v\n", functions)
 	// parse the functions
 	parsedFunctions := []*FunctionDefinition{}
 	for _, function := range functions {
 		parsedFunctions = append(parsedFunctions, t.parseFunction(function))
 	}
-	return nil
+	ret.Entrypoint = "main"
+	ret.Functions = parsedFunctions
+	return ret
 }
 
 func (t *Tokenizer) parseFunction(fnc UnparsedFunction) *FunctionDefinition {
@@ -164,6 +167,7 @@ func (t *Tokenizer) parseFunction(fnc UnparsedFunction) *FunctionDefinition {
 	}
 	// finally, parse the body of the function
 	ret.Operations = t.parseFunctionBody(fnc.Body)
+	ret.Name = fnc.Name
 	return &ret
 }
 
@@ -181,7 +185,7 @@ func (t *Tokenizer) parseFunctionBody(body string) []*IntermediateOperation {
 func (t *Tokenizer) parseLine(line string) IntermediateOperation {
 	tokens := strings.Split(line, " ")
 	// if this line is empty return a no-op which we will delete later in optimization
-	if len(tokens) == 0 {
+	if len(tokens) == 0 || len(deleteWhitespace(line)) == 0 {
 		return IntermediateOperation{
 			Type: IM_NOP,
 		}
@@ -192,6 +196,15 @@ func (t *Tokenizer) parseLine(line string) IntermediateOperation {
 	}
 	// otherwise resolve this line in pure expression mode
 	return t.parseExpressionLine(line)
+}
+
+func deleteWhitespace(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
 }
 
 func (t *Tokenizer) parseKeyWordLine(line string, keyword string) IntermediateOperation {
@@ -221,18 +234,26 @@ func (t *Tokenizer) parseExpressionLine(line string) IntermediateOperation {
 }
 
 func (t *Tokenizer) parseExpressionArguments(line string) *Expression {
-	return &Expression{}
+	val := "EXPRESSION_NOT_IMPLEMENTED"
+	return &Expression{
+		Operator: BO_CONSTANT,
+		Value: &BinaryTypedValue{
+			Type:  BT_STRING,
+			Value: &val,
+		},
+	}
 }
 
 // matches let myvar: string = "dfg" lines
 // G1 is the variable name
 // G2 is the variable type
 // G3 is the optional value that is assigned
-var LET_LINE_REGEX = regexp.MustCompile(`(?m)let ([a-zA-z_]{1}[a-zA-Z0-9-_]*): ([a-zA-Z0-9]*)([ \n]= (.*))?`)
+var LET_LINE_REGEX = regexp.MustCompile(`(?m)let ([a-zA-z_]{1}[a-zA-Z0-9-_]*): ([a-zA-Z0-9]*)(?:[ \n]= (.*))?`)
 
 func (t *Tokenizer) parseLetLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
 		Type: IM_ASSIGN,
+		Args: make([]any, 3),
 	}
 	// use the let line regex to extract the various components of a let line
 	matches := LET_LINE_REGEX.FindStringSubmatch(line)
@@ -242,7 +263,7 @@ func (t *Tokenizer) parseLetLine(line string) IntermediateOperation {
 	// assign the symbol name to arg0
 	ret.Args[0] = matches[1]
 	// get the type of the symbol and assign it to arg1
-	parsedType := t.parseTypeToken(line, false)
+	parsedType := t.parseTypeToken(matches[2], false)
 	ret.Args[1] = parsedType
 	// if there is a G3 match save it, otherwise determine the default value for this type
 	if len(matches) == 4 {
@@ -268,6 +289,7 @@ var FOR_LINE_REGEX = regexp.MustCompile(`(?mU)for let ([a-zA-z_]{1}[a-zA-Z0-9-_]
 func (t *Tokenizer) parseForLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
 		Type: IM_FOR,
+		Args: make([]any, 5),
 	}
 	// use the let line regex to extract the various components of a let line
 	matches := FOR_LINE_REGEX.FindStringSubmatch(line)
@@ -307,6 +329,7 @@ var FOREACH_LINE_REGEX = regexp.MustCompile(`(?mU)foreach ([a-zA-z_]{1}[a-zA-Z0-
 func (t *Tokenizer) parseForeachLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
 		Type: IM_FOREACH,
+		Args: make([]any, 2),
 	}
 	// use the let line regex to extract the various components of a let line
 	matches := FOREACH_LINE_REGEX.FindStringSubmatch(line)
@@ -330,16 +353,18 @@ func (t *Tokenizer) parseBreakLine(line string) IntermediateOperation {
 
 // match return statements 'return test'
 // G1 matches the name of the symbol being returned
-var RETURN_LINE_REGEX = regexp.MustCompile(`(?m)return( [a-zA-z_]{1}[a-zA-Z0-9-_]*)?\n`)
+var RETURN_LINE_REGEX = regexp.MustCompile(`(?m)return( [a-zA-Z0-9+\-*/]*)?$`)
 
 func (t *Tokenizer) parseReturnLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
 		Type: IM_RETURN,
+		Args: make([]any, 1),
 	}
 	// use the let line regex to extract the various components of a let line
-	matches := FOREACH_LINE_REGEX.FindStringSubmatch(line)
-	if len(matches) != 6 {
-		panic(fmt.Sprintf("unexpected number of segments in foreach loop match (expected 6 but got %v)", len(matches)))
+	fmt.Printf("'%v'\n", line)
+	matches := RETURN_LINE_REGEX.FindStringSubmatch(line)
+	if len(matches) != 2 && len(matches) != 1 {
+		panic(fmt.Sprintf("unexpected number of segments in return match (expected 1 || 2 but got %v)", len(matches)))
 	}
 	// save the name of the symbol being returned to arg0
 	ret.Args[0] = matches[1]
@@ -418,7 +443,7 @@ func (t *Tokenizer) parseArguments(args string) []IntermediateVar {
 	for _, varWithName := range varsWithNames {
 		words := strings.Split(varWithName, " ")
 		if len(words) != 2 {
-			panic(fmt.Sprintf("typed variable token %v has an invalid segment length (expected 2 but got %v)", varWithName, len(words)))
+			panic(fmt.Sprintf("typed variable token %v has an invalid segment length (expected 2 but got %v)%v", varWithName, len(words), words))
 		}
 		current := IntermediateVar{
 			Name: words[0],

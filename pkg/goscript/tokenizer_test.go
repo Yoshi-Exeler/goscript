@@ -151,3 +151,8 @@ func TestParseFunctionCall(t *testing.T) {
 	expr := parseExpression(`test(5*7+1)`)
 	fmt.Printf("%+v\n", expr.Value.Value)
 }
+
+func TestParseSymbolExpression(t *testing.T) {
+	expr := parseExpression(`myVar`)
+	fmt.Printf("%+v\n", expr.Value.Value)
+}

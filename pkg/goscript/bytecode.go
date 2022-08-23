@@ -310,6 +310,7 @@ const (
 	BO_LESSER_EQUALS             BinaryOperator = 12
 	BO_INDEX_INTO                BinaryOperator = 13 // indexes into an array
 	BO_FUNCTION_CALL_PLACEHOLDER BinaryOperator = 14
+	BO_VSYMBOL_PLACEHOLDER       BinaryOperator = 15
 )
 
 func (b BinaryOperator) String() string {

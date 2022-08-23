@@ -493,7 +493,14 @@ func realizeLiteral(token ExpressionToken) *Expression {
 			Operator: BO_CONSTANT,
 		}
 	}
-	panic("invalid expression. cannot realize literal, no parsing mode has matched.")
+	// if no other mode matched this must be a symbol
+	return &Expression{
+		Operator: BO_VSYMBOL_PLACEHOLDER,
+		Value: &BinaryTypedValue{
+			Type:  BT_NOTYPE,
+			Value: token.Value,
+		},
+	}
 }
 
 func containsOperator(tokens []ExpressionToken) bool {

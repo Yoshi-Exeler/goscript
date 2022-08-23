@@ -39,9 +39,18 @@ return 1
 // 	fmt.Printf("%+v\n", interm)
 // }
 
-func TestParseExprSimple(t *testing.T) {
+// func TestParseExprSimple(t *testing.T) {
+// 	tokenizer := &Tokenizer{}
+// 	expr := tokenizer.parseExpression(`5==5 -      9*2.5 +11.5   2/1+ "this is a string+-*/" +1`)
+// 	rt := NewRuntime()
+// 	val := rt.ResolveExpression(expr)
+// 	fmt.Printf("%+v\n", val.Value.(*uint64))
+// }
+
+func TestParseExprFunc(t *testing.T) {
 	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`5==5 -      9*2.5 +11.5   2/1+ "this is a string+-*/" +1`)
+	expr := tokenizer.parseExpression(`5==5 -      9*2.5 +11.5 +  2/1+ test(5+test2(5)) +1-(5*6)`)
+	fmt.Printf("TEST::%v\n", expr)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	fmt.Printf("%+v\n", val.Value.(*uint64))

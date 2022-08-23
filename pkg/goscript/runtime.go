@@ -299,13 +299,13 @@ func (r *Runtime) execBind(operation *BinaryOperation) {
 	// initialize the symbol
 	r.SymbolTable[symbolRef] = &BinaryTypedValue{
 		Type:  symType,
-		Value: r.defaultValuePtrOf(symType),
+		Value: defaultValuePtrOf(symType),
 	}
 	// save the symbol reference to the current scope
 	r.SymbolScopeStack[len(r.SymbolScopeStack)-1] = append(r.SymbolScopeStack[len(r.SymbolScopeStack)-1], symbolRef)
 }
 
-func (r *Runtime) defaultValuePtrOf(valueType BinaryType) any {
+func defaultValuePtrOf(valueType BinaryType) any {
 	switch valueType {
 	case BT_INT8:
 		zero := int8(0)

@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -235,24 +237,421 @@ func (t *Tokenizer) parseExpressionLine(line string) IntermediateOperation {
 }
 
 func (t *Tokenizer) parseExpression(expr string) *Expression {
+	// tokenize the expression
 	tokens := t.tokenizeExpression(expr)
 	for idx, tkn := range tokens {
-		fmt.Printf("[%v]:%v\n", idx, tkn)
+		fmt.Printf("[%v]:%v\n", idx, tkn.String())
 	}
+	// check if the expression still contains operators
+	operatorExists := t.containsOperator(tokens)
+	if !operatorExists {
+		// if there is more than one token we panic
+		if len(tokens) > 1 {
+			panic("invalid expression. unused extra tokens.")
+		}
+		// if there are no more tokens, we just yield nil
+		if len(tokens) == 0 {
+			return nil
+		}
+		// if there is exactly one token, we realize it
+		return t.realizeToken(tokens[0])
+	}
+	// otherwise build and return the operator tree
+	return t.buildExpressionTree(tokens)
+}
+
+type ExpressionTreeNode struct {
+	ID       uint64
+	Left     uint64
+	Right    uint64
+	Operator BinaryOperator
+	IsChild  bool
+}
+
+var PRIORITY_OPS = []string{"*", "/"}
+
+func isPrioritizedOp(op string) bool {
+	for _, pop := range PRIORITY_OPS {
+		if pop == op {
+			return true
+		}
+	}
+	return false
+}
+
+func (t *Tokenizer) buildExpressionTree(tokens []ExpressionToken) *Expression {
+	// map out our tokens by their id
+	tokensByID := make(map[uint64]*ExpressionToken)
+	for _, token := range tokens {
+		token := token
+		tokensByID[token.ID] = &token
+	}
+	// map out our nodes by their id
+	nodesByID := make(map[uint64]*ExpressionTreeNode)
+	// find the highest token id among the tokens used
+	maxTokenID := tokens[len(tokens)-1].ID
+	// increment by one to get the first free index
+	maxTokenID++
+	// save the root node
+	var root *ExpressionTreeNode
+	// enter the main parser loop
+	for {
+		// if there is only the root token left we exit
+		if len(tokens) == 1 || len(tokens) == 0 {
+			break
+		}
+		// find the next operator in the priority chain
+		nextOpIndex := t.findNextOperator(tokens)
+		// create a node instance for it
+		node := &ExpressionTreeNode{
+			ID:       maxTokenID,
+			Left:     tokens[uint64(nextOpIndex-1)].ID,
+			Right:    tokens[uint64(nextOpIndex+1)].ID,
+			Operator: t.parseOperator(tokens[nextOpIndex].Value),
+		}
+		nodesByID[node.ID] = node
+		maxTokenID++
+		// save this as the root node if required
+		root = node
+		// replace the relevant tokens with a reference
+		newTokens := t.replaceOperation(tokens, nextOpIndex, node.ID)
+		// replace our tokens
+		tokens = newTokens
+		for _, tkn := range tokens {
+			fmt.Printf("%+v", tkn.String())
+		}
+		fmt.Println("")
+		time.Sleep(time.Millisecond * 250)
+	}
+	// generate the expression tree
+	return t.generateExpressionTree(root, nodesByID, tokensByID)
+}
+
+func (t *Tokenizer) generateExpressionTree(cnode *ExpressionTreeNode, nodes map[uint64]*ExpressionTreeNode, tokens map[uint64]*ExpressionToken) *Expression {
+	fmt.Printf("gen_expr_tree(%+v) %v\n", cnode, tokens)
+	expression := &Expression{
+		Operator: cnode.Operator,
+	}
+	// if the left node is an op node, recursively resolve it
+	if nodes[cnode.Left] != nil {
+		fmt.Printf("resolve_left(%+v)\n", nodes[cnode.Left])
+		expression.LeftExpression = t.generateExpressionTree(nodes[cnode.Left], nodes, tokens)
+	}
+	// it the left node is a non-op node, realize it
+	if tokens[cnode.Left] != nil {
+		ctoken := tokens[cnode.Left]
+		fmt.Printf("relize_left(%+v)\n", ctoken.String())
+		expression.LeftExpression = t.realizeToken(*ctoken)
+	}
+	// if the right node is an op node, recursively resolve it
+	if nodes[cnode.Right] != nil {
+		fmt.Printf("resolve_right(%+v)\n", nodes[cnode.Right])
+		expression.RightExpression = t.generateExpressionTree(nodes[cnode.Right], nodes, tokens)
+	}
+	// it the left node is a non-op node, realize it
+	if tokens[cnode.Right] != nil {
+		ctoken := tokens[cnode.Right]
+		fmt.Printf("relize_right(%+v)\n", ctoken.String())
+		expression.RightExpression = t.realizeToken(*ctoken)
+	}
+	expression.Value = &BinaryTypedValue{
+		Type:  expression.LeftExpression.Value.Type,
+		Value: defaultValuePtrOf(expression.LeftExpression.Value.Type),
+	}
+	return expression
+}
+
+func (t *Tokenizer) realizeFunctionCall(token ExpressionToken) *Expression {
 	return nil
 }
 
-func (t *Tokenizer) tokenizeExpression(expr string) []string {
-	res := []string{}
+func (t *Tokenizer) stripBrackets(expr string) string {
+	return strings.TrimPrefix(strings.TrimSuffix(expr, ")"), "(")
+}
+
+func (t *Tokenizer) replaceOperation(tokens []ExpressionToken, opIndex int, opID uint64) []ExpressionToken {
+
+	newTokens := []ExpressionToken{}
+	for idx, token := range tokens {
+		// skip both operands
+		if idx == opIndex-1 || idx == opIndex+1 {
+			fmt.Printf("skip=%v\n", token)
+			continue
+		}
+		// replace the actual index with out placeholder
+		if idx == opIndex {
+			newTokens = append(newTokens, ExpressionToken{
+				ID:        opID,
+				TokenType: TK_REFERENCE,
+			})
+			continue
+		}
+		// copy everything else
+		newTokens = append(newTokens, token)
+	}
+	fmt.Printf("replace %v => %v\n", opIndex, newTokens)
+	return newTokens
+}
+
+func (t *Tokenizer) parseOperator(op string) BinaryOperator {
+	switch op {
+	case "+":
+		return BO_PLUS
+	case "-":
+		return BO_MINUS
+	case "*":
+		return BO_MULTIPLY
+	case "/":
+		return BO_DIVIDE
+	case "==":
+		return BO_EQUALS
+	case ">":
+		return BO_GREATER
+	case "<":
+		return BO_LESSER
+	case ">=":
+		return BO_GREATER_EQUALS
+	case "<=":
+		return BO_LESSER_EQUALS
+	default:
+		panic(fmt.Sprintf("invalid expression. %v is not an operator", op))
+	}
+}
+
+func (t *Tokenizer) findNextOperator(tokens []ExpressionToken) int {
+	res := -1
+	for i := 0; i < len(tokens); i++ {
+		// skip all nodes that arent operators
+		if tokens[i].TokenType != TK_OPERATOR {
+			continue
+		}
+		// if we currently dont have an operator use the current one
+		if res == -1 {
+			res = i
+			continue
+		}
+		// upgrade the operator if it is prioritized but the current one is not
+		if !isPrioritizedOp(tokens[res].Value) && isPrioritizedOp(tokens[i].Value) {
+			return i
+		}
+	}
+	return res
+}
+
+/*
+
+
+1 + 5  * (4+5) + 2 * (4*2)
+1 + [SOLVED] + 2 * (4*2)
+1 + [SOLVED] + [SOLVED]
+[SOLVED] + [SOLVED]
+[SOLVED]
+
+[5*(4+5),  2*(4*2),  5*(4+5)+1,  5*(4+5)+1+2*(4*2)]
+[a      ,  b      ,  c        ,  d                ]
+
+
+
+             +
+          +    (4*2)
+        *    2
+      5  (4+5)
+*/
+
+/*
+func IsPalindrome(s: string): boolean {
+	a int: = 0
+	b int: = len(s)-1
+	while a < b {
+		if s[a] != s[b] {
+			return false
+		}
+		a++
+		b--
+	}
+	return true
+}
+
+*/
+
+// realizeToken will conver a constant, function call or bracket block into an expression
+func (t *Tokenizer) realizeToken(token ExpressionToken) *Expression {
+	switch token.TokenType {
+	case TK_LITERAL:
+		return t.realizeLiteral(token)
+	case TK_BRACKET:
+		fmt.Printf("realize_brackets(%+v)\n", t.stripBrackets(token.Value))
+		return t.parseExpression(t.stripBrackets(token.Value))
+	case TK_FUNCTION:
+		return t.realizeFunctionCall(token)
+	// case TK_OPERATOR:
+	// 	return t.generateExpressionTree(token)
+	default:
+		panic(fmt.Sprintf("invalid expression. cannot realize token %+v", token))
+	}
+}
+
+func (t *Tokenizer) realizeLiteral(token ExpressionToken) *Expression {
+	// try to parse the token as an uint64
+	u64, err := strconv.ParseUint(token.Value, 10, 64)
+	if err == nil {
+		return &Expression{
+			Value: &BinaryTypedValue{
+				Type:  BT_UINT64,
+				Value: u64,
+			},
+			Operator: BO_CONSTANT,
+		}
+	}
+	i64, err := strconv.ParseInt(token.Value, 10, 64)
+	if err == nil {
+		return &Expression{
+			Value: &BinaryTypedValue{
+				Type:  BT_INT64,
+				Value: i64,
+			},
+			Operator: BO_CONSTANT,
+		}
+	}
+	f64, err := strconv.ParseFloat(token.Value, 64)
+	if err == nil {
+		return &Expression{
+			Value: &BinaryTypedValue{
+				Type:  BT_FLOAT64,
+				Value: f64,
+			},
+			Operator: BO_CONSTANT,
+		}
+	}
+	b, err := strconv.ParseBool(token.Value)
+	if err == nil {
+		return &Expression{
+			Value: &BinaryTypedValue{
+				Type:  BT_BOOLEAN,
+				Value: b,
+			},
+			Operator: BO_CONSTANT,
+		}
+	}
+	panic("invalid expression. cannot realize literal, no parsing mode has matched.")
+}
+
+func (t *Tokenizer) containsOperator(tokens []ExpressionToken) bool {
+	for _, expToken := range tokens {
+		if expToken.TokenType == TK_OPERATOR {
+			return true
+		}
+	}
+	return false
+}
+
+type ExpressionToken struct {
+	ID        uint64
+	TokenType TokenType
+	Value     string
+}
+
+func (e *ExpressionToken) String() string {
+	// expString := ""
+	// switch e.TokenType {
+	// case TK_LITERAL:
+	// 	expString = "LITERAL"
+	// case TK_STRING:
+	// 	expString = "STRING"
+	// case TK_BRACKET:
+	// 	expString = "BRACKET"
+	// case TK_FUNCTION:
+	// 	expString = "FUNCTION"
+	// case TK_OPERATOR:
+	// 	expString = "OPERATOR"
+	// case TK_REFERENCE:
+	// 	expString = "REFERENCE"
+	// }
+	if e.TokenType == TK_REFERENCE {
+		return "REF"
+	}
+	return fmt.Sprintf("%v", e.Value)
+}
+
+type TokenType byte
+
+const (
+	TK_LITERAL   TokenType = 1
+	TK_STRING    TokenType = 2
+	TK_BRACKET   TokenType = 3
+	TK_FUNCTION  TokenType = 4
+	TK_OPERATOR  TokenType = 5
+	TK_REFERENCE TokenType = 6
+)
+
+func (t *Tokenizer) tokenizeExpression(expr string) []ExpressionToken {
+	res := []ExpressionToken{}
 	current := ""
 	inString := false
+	bracketDepth := 0
+	inBrackets := false
+	isFunction := false
 	lastChunkIsOp := false
 	for i := 0; i < len(expr); i++ {
+		if string(expr[i]) != `)` && string(expr[i]) != `(` && inBrackets {
+			current += string(expr[i])
+			lastChunkIsOp = false
+			continue
+		}
+		if string(expr[i]) == `)` && inBrackets {
+			// update our bracket depth
+			if bracketDepth > 0 {
+				bracketDepth--
+			} else {
+				panic("invalid expression. unbalanced brackets.")
+			}
+			// if we just hit depth 0, commit the current chunk
+			if bracketDepth == 0 {
+				current += `)`
+				if isFunction {
+					if len(current) > 0 {
+						res = append(res, ExpressionToken{
+							TokenType: TK_FUNCTION,
+							Value:     current,
+						})
+					}
+				} else {
+					if len(current) > 0 {
+						res = append(res, ExpressionToken{
+							TokenType: TK_BRACKET,
+							Value:     current,
+						})
+					}
+				}
+				current = ""
+				lastChunkIsOp = false
+				inBrackets = false
+				isFunction = false
+			} else {
+				// otherwise just add
+				current += `)`
+			}
+			continue
+		}
+		if string(expr[i]) == `(` {
+			if len(current) > 0 {
+				isFunction = true
+			}
+			bracketDepth++
+			if !inBrackets {
+				inBrackets = true
+			}
+			current += `(`
+			continue
+		}
 		// if we read a quote while in string, commit the current string as a chunk
 		if string(expr[i]) == `"` && inString {
 			current += `"`
 			if len(current) > 0 {
-				res = append(res, current)
+				res = append(res, ExpressionToken{
+					TokenType: TK_STRING,
+					Value:     current,
+				})
 			}
 			current = ""
 			lastChunkIsOp = false
@@ -267,9 +666,12 @@ func (t *Tokenizer) tokenizeExpression(expr string) []string {
 			continue
 		}
 		// if we read a space while not in a string, we commit the current chunk
-		if string(expr[i]) == ` ` && !inString {
+		if string(expr[i]) == ` ` && !inString && !inBrackets {
 			if len(current) > 0 {
-				res = append(res, current)
+				res = append(res, ExpressionToken{
+					TokenType: TK_LITERAL,
+					Value:     current,
+				})
 				current = ""
 			}
 			lastChunkIsOp = false
@@ -279,18 +681,30 @@ func (t *Tokenizer) tokenizeExpression(expr string) []string {
 		if !inString {
 			if charIsOperator(string(expr[i])) {
 				if len(current) > 0 {
-					res = append(res, current)
+					res = append(res, ExpressionToken{
+						TokenType: TK_LITERAL,
+						Value:     current,
+					})
 				}
-				res = append(res, string(expr[i]))
+				res = append(res, ExpressionToken{
+					TokenType: TK_OPERATOR,
+					Value:     string(expr[i]),
+				})
 				current = ""
 				lastChunkIsOp = true
 				continue
 			}
 			if len(expr)-i+1 > 2 && charIsOperator(string(expr[i])+string(expr[i+1])) {
 				if len(current) > 0 {
-					res = append(res, current)
+					res = append(res, ExpressionToken{
+						TokenType: TK_LITERAL,
+						Value:     current,
+					})
 				}
-				res = append(res, string(expr[i])+string(expr[i+1]))
+				res = append(res, ExpressionToken{
+					TokenType: TK_OPERATOR,
+					Value:     string(expr[i]) + string(expr[i+1]),
+				})
 				current = ""
 				i++
 				lastChunkIsOp = true
@@ -298,11 +712,16 @@ func (t *Tokenizer) tokenizeExpression(expr string) []string {
 			}
 		}
 		// if no condition applies, just append the current char to the current segment
-		current += string(expr[i])
+		if !charIsWhitespace(string(expr[i])) {
+			current += string(expr[i])
+		}
 	}
 	if len(current) > 0 {
+		res = append(res, ExpressionToken{
+			TokenType: TK_LITERAL,
+			Value:     current,
+		})
 		lastChunkIsOp = false
-		res = append(res, current)
 	}
 	if inString {
 		log.Fatalf("invalid expression. string was not terminated. expr: %v", expr)
@@ -310,7 +729,18 @@ func (t *Tokenizer) tokenizeExpression(expr string) []string {
 	if lastChunkIsOp {
 		log.Fatalf("invalid expression. expression cannot end with an operator. expr: %v", expr)
 	}
-	return res
+	newTokens := []ExpressionToken{}
+	for idx, token := range res {
+		token := token
+		token.ID = uint64(idx) + 1
+		newTokens = append(newTokens, token)
+	}
+	return newTokens
+}
+
+func charIsWhitespace(c string) bool {
+	trimmed := strings.TrimSpace(c)
+	return len(trimmed) == 0
 }
 
 func charIsOperator(c string) bool {

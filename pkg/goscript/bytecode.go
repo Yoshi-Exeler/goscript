@@ -137,6 +137,8 @@ func (bv *BinaryTypedValue) String() string {
 		return fmt.Sprint(*bv.Value.(*bool))
 	case BT_ARRAY:
 		return "[...]"
+	case BT_NOTYPE:
+		return "NOTYPE"
 	default:
 		panic("unexpected type in stringify typed value")
 	}

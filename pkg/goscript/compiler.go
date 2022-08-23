@@ -31,7 +31,9 @@ The following steps will be performed:
 - Replace Symbol Placeholders in expressions
 - Replace Function Placeholders in expressions
 - Eliminate Dead code
-- Optimize?
+- Optimize:
+	- Resolve constant expressions as far as possible
+- Generate the actual bytecode
 */
 func (c *Compiler) generateProgram(intermediate *IntermediateProgram) (*Program, error) {
 	return nil, nil

@@ -22,5 +22,9 @@ func (c *Compiler) Compile(job CompileJob) (*Program, error) {
 	}
 	intermediate := parse(fqsc)
 	fmt.Println(intermediate)
+	return c.generateProgram(intermediate)
+}
+
+func (c *Compiler) generateProgram(intermediate *IntermediateProgram) (*Program, error) {
 	return nil, nil
 }

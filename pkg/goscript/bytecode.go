@@ -154,7 +154,7 @@ func NewAssignExpressionOp(symbolRef int, expression *Expression) BinaryOperatio
 	}
 }
 
-func NewIndexAssignOp(symbol int, index int64, expression *Expression) BinaryOperation {
+func NewIndexAssignOp(symbol int, index *Expression, expression *Expression) BinaryOperation {
 	return BinaryOperation{
 		Type: INDEX_ASSIGN,
 		Args: []any{symbol, index, expression},

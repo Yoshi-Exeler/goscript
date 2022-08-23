@@ -2,9 +2,6 @@ package goscript
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"runtime/pprof"
 	"testing"
 	"time"
 )
@@ -187,16 +184,6 @@ func TestAssignFunctionReturnValue(t *testing.T) {
 	0 ENTER_SCOPE
 */
 func TestLoopAssign(t *testing.T) {
-	f, err := os.Create("profile.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
-	// MemProfileAllocs changes which type of memory to profile
-	// allocations.
-	// prof := profile.Start(profile.MemProfileAllocs, profile.ProfilePath("."), profile.MemProfileRate(4096))
-	// defer prof.Stop()
 	zero := uint64(0)
 	zero2 := uint64(0)
 	zero3 := uint64(0)

@@ -25,6 +25,14 @@ func (c *Compiler) Compile(job CompileJob) (*Program, error) {
 	return c.generateProgram(intermediate)
 }
 
+/*
+generateProgram generates a program from the intermediary program representation
+The following steps will be performed:
+- Replace Symbol Placeholders in expressions
+- Replace Function Placeholders in expressions
+- Eliminate Dead code
+- Optimize?
+*/
 func (c *Compiler) generateProgram(intermediate *IntermediateProgram) (*Program, error) {
 	return nil, nil
 }

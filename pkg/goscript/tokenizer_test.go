@@ -1,6 +1,7 @@
 package goscript
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -154,4 +155,10 @@ func TestParseExprSimpleBrackets(t *testing.T) {
 	if res != 96 {
 		t.Fatalf("expected (5+5)*10-(10-2*2) to be 96 but was %v", res)
 	}
+}
+
+func TestParseFunctionCall(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`test(5*7+1)`)
+	fmt.Printf("%+v\n", expr.Value.Value)
 }

@@ -347,8 +347,42 @@ func (t *Tokenizer) generateExpressionTree(cnode *ExpressionTreeNode, nodes map[
 	return expression
 }
 
+type FunctionCallPlaceholder struct {
+	Name string
+	Args *Expression
+}
+
 func (t *Tokenizer) realizeFunctionCall(token ExpressionToken) *Expression {
-	return nil
+	return &Expression{
+		LeftExpression:  nil,
+		RightExpression: nil,
+		Operator:        BO_FUNCTION_CALL_PLACEHOLDER,
+		Value: &BinaryTypedValue{
+			Type: BT_NOTYPE,
+			Value: &FunctionCallPlaceholder{
+				Name: t.getFunctionName(token.Value),
+				Args: t.parseExpression(t.getFunctionArgs(token.Value)),
+			},
+		},
+	}
+}
+
+var FUNCTION_ARG_REGEX = regexp.MustCompile(`(?m)(\(.*\))`)
+
+func (t *Tokenizer) getFunctionArgs(expr string) string {
+	match := FUNCTION_ARG_REGEX.FindString(expr)
+	if len(match) < 3 {
+		panic(fmt.Sprintf("invalid function call arguments %v", expr))
+	}
+	return match[1 : len(match)-1]
+}
+
+func (t *Tokenizer) getFunctionName(expr string) string {
+	split := strings.Split(expr, "(")
+	if len(split) == 0 {
+		panic(fmt.Sprintf("invalid function call %v", expr))
+	}
+	return split[0]
 }
 
 func (t *Tokenizer) stripBrackets(expr string) string {
@@ -356,7 +390,6 @@ func (t *Tokenizer) stripBrackets(expr string) string {
 }
 
 func (t *Tokenizer) replaceOperation(tokens []ExpressionToken, opIndex int, opID uint64) []ExpressionToken {
-
 	newTokens := []ExpressionToken{}
 	for idx, token := range tokens {
 		// skip both operands

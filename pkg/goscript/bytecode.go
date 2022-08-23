@@ -296,19 +296,20 @@ type BinarySymbol struct {
 type BinaryOperator byte
 
 const (
-	BO_CONSTANT       BinaryOperator = 1
-	BO_PLUS           BinaryOperator = 2
-	BO_MINUS          BinaryOperator = 3
-	BO_MULTIPLY       BinaryOperator = 4
-	BO_DIVIDE         BinaryOperator = 5
-	BO_FUNCTION_CALL  BinaryOperator = 6 // represents a function that returns a constant
-	BO_VSYMBOL        BinaryOperator = 7
-	BO_EQUALS         BinaryOperator = 8
-	BO_GREATER        BinaryOperator = 9
-	BO_LESSER         BinaryOperator = 10
-	BO_GREATER_EQUALS BinaryOperator = 11
-	BO_LESSER_EQUALS  BinaryOperator = 12
-	BO_INDEX_INTO     BinaryOperator = 13 // indexes into an array
+	BO_CONSTANT                  BinaryOperator = 1
+	BO_PLUS                      BinaryOperator = 2
+	BO_MINUS                     BinaryOperator = 3
+	BO_MULTIPLY                  BinaryOperator = 4
+	BO_DIVIDE                    BinaryOperator = 5
+	BO_FUNCTION_CALL             BinaryOperator = 6 // represents a function that returns a constant
+	BO_VSYMBOL                   BinaryOperator = 7
+	BO_EQUALS                    BinaryOperator = 8
+	BO_GREATER                   BinaryOperator = 9
+	BO_LESSER                    BinaryOperator = 10
+	BO_GREATER_EQUALS            BinaryOperator = 11
+	BO_LESSER_EQUALS             BinaryOperator = 12
+	BO_INDEX_INTO                BinaryOperator = 13 // indexes into an array
+	BO_FUNCTION_CALL_PLACEHOLDER BinaryOperator = 14
 )
 
 func (b BinaryOperator) String() string {

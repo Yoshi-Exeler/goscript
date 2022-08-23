@@ -5,7 +5,7 @@ import (
 )
 
 func TestSourceWalk(t *testing.T) {
-	_, err := DiscoverSources("../../tests/externals.gs", "../../tests/")
+	_, err := discoverSources("../../tests/externals.gs", "../../tests/")
 	if err != nil {
 		t.Fatalf("got error %v", err)
 	}

@@ -60,10 +60,10 @@ var EXTERNAL_DIRECTIVE_REGEX = regexp.MustCompile(`(?mU)external ([a-zA-Z]*) fro
 var VERSION_TAG_REGEX = regexp.MustCompile(`(?m)@version=([\^0-9\.]*)`)
 var BRANCH_TAG_REGEX = regexp.MustCompile(`(?m)@branch=([0-9a-zA-Z\.]*)`)
 
-// DiscoverSources will discover source files and parse the imports required by the application
+// discoverSources will discover source files and parse the imports required by the application
 // at the specified path  If a required external import is not present in the vendor directory,
 // this function will treat that as an error.
-func DiscoverSources(mainPath string, workspace string) (*ApplicationSource, error) {
+func discoverSources(mainPath string, workspace string) (*ApplicationSource, error) {
 	start := time.Now()
 	fmt.Println("[GSC][discoverSources] begin discoverSources")
 	// get the external modules required by our app

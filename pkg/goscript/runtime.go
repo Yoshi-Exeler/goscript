@@ -396,8 +396,10 @@ func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 func (r *Runtime) indexIntoExpression(e *Expression) *BinaryTypedValue {
 	// fetch the symbol from the symbol table
 	symbol := r.SymbolTable[e.Ref]
+	// resolve the index expression
+	index := r.ResolveExpression(e.Value.Value.(*Expression))
 	// index into the symbol
-	return (*symbol.Value.(*[]*BinaryTypedValue))[*e.Value.Value.(*int64)]
+	return (*symbol.Value.(*[]*BinaryTypedValue))[*index.Value.(*int)]
 }
 
 // exec will execute the expression as a function, assuming that it has been type checked before

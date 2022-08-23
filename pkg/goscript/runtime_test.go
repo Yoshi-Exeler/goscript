@@ -52,6 +52,7 @@ func TestAssignArrayConstant(t *testing.T) {
 }
 
 func TestArrayIndexInto(t *testing.T) {
+	zero := 0
 	eleven := uint8(11)
 	testProgram := Program{
 		Operations: []BinaryOperation{
@@ -61,7 +62,7 @@ func TestArrayIndexInto(t *testing.T) {
 				Value: &eleven,
 			}}, BT_ARRAY)),
 			NewBindOp(2, BT_UINT8),
-			NewAssignExpressionOp(2, NewIndexIntoExpression(1, 0)),
+			NewAssignExpressionOp(2, NewIndexIntoExpression(1, NewConstantExpression(&zero, BT_INT64))),
 			NewReturnValueOp(NewVSymbolExpression(2))},
 		SymbolTableSize: 4,
 	}

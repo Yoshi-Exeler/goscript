@@ -48,8 +48,7 @@ return 1
 // }
 
 func TestParseExprAddition(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`5+5`)
+	expr := parseExpression(`5+5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*uint64)
@@ -59,8 +58,7 @@ func TestParseExprAddition(t *testing.T) {
 }
 
 func TestParseExprAdditionF64(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`5.5+5.5`)
+	expr := parseExpression(`5.5+5.5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*float64)
@@ -70,8 +68,7 @@ func TestParseExprAdditionF64(t *testing.T) {
 }
 
 func TestParseExprSubtraction(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`10-5`)
+	expr := parseExpression(`10-5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*uint64)
@@ -81,8 +78,7 @@ func TestParseExprSubtraction(t *testing.T) {
 }
 
 func TestParseExprSubtractionF64(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`10.5-5.5`)
+	expr := parseExpression(`10.5-5.5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*float64)
@@ -92,8 +88,7 @@ func TestParseExprSubtractionF64(t *testing.T) {
 }
 
 func TestParseExprMultiplication(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`10*10`)
+	expr := parseExpression(`10*10`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*uint64)
@@ -103,8 +98,7 @@ func TestParseExprMultiplication(t *testing.T) {
 }
 
 func TestParseExprMultiplicationF64(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`10.0*0.5`)
+	expr := parseExpression(`10.0*0.5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*float64)
@@ -114,8 +108,7 @@ func TestParseExprMultiplicationF64(t *testing.T) {
 }
 
 func TestParseExprDivision(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`10/2`)
+	expr := parseExpression(`10/2`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*float64)
@@ -125,8 +118,7 @@ func TestParseExprDivision(t *testing.T) {
 }
 
 func TestParseExprDivisionF64(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`10.0/2.0`)
+	expr := parseExpression(`10.0/2.0`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*float64)
@@ -136,8 +128,7 @@ func TestParseExprDivisionF64(t *testing.T) {
 }
 
 func TestParseExprSimpleOrder(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`5+10*10`)
+	expr := parseExpression(`5+10*10`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*uint64)
@@ -147,8 +138,7 @@ func TestParseExprSimpleOrder(t *testing.T) {
 }
 
 func TestParseExprSimpleBrackets(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`(5+5)*10-(10-3*2)`)
+	expr := parseExpression(`(5+5)*10-(10-3*2)`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*uint64)
@@ -158,7 +148,6 @@ func TestParseExprSimpleBrackets(t *testing.T) {
 }
 
 func TestParseFunctionCall(t *testing.T) {
-	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`test(5*7+1)`)
+	expr := parseExpression(`test(5*7+1)`)
 	fmt.Printf("%+v\n", expr.Value.Value)
 }

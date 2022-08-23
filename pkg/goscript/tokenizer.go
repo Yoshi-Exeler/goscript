@@ -123,68 +123,50 @@ type UnparsedFunction struct {
 	Body    string
 }
 
-func (t *Tokenizer) ParseFunction() *FunctionDefinition {
-	return nil
-}
-
-type TokenizerState byte
-
-// Tokenizer holds all the context required during tokenization of goscript source code
-type Tokenizer struct {
-	State   TokenizerState
-	Context TokenizerContext
-}
-
-type TokenizerContext struct {
-	funcNameToFunc map[string]*FunctionDefinition
-	symbolToIndex  map[string]*int
-	indexToType    map[int]*BinaryType
-}
-
 // Parse is the main entrypoint for the tokenizer
-func (t *Tokenizer) parse(source string) *IntermediateProgram {
+func parse(source string) *IntermediateProgram {
 	ret := &IntermediateProgram{}
 	// extract the function definitions from the source code
-	functions := t.findFunctions(source)
+	functions := findFunctions(source)
 	// output our function definitions
 	// parse the functions
 	parsedFunctions := []*FunctionDefinition{}
 	for _, function := range functions {
-		parsedFunctions = append(parsedFunctions, t.parseFunction(function))
+		parsedFunctions = append(parsedFunctions, parseFunction(function))
 	}
 	ret.Entrypoint = "main"
 	ret.Functions = parsedFunctions
 	return ret
 }
 
-func (t *Tokenizer) parseFunction(fnc UnparsedFunction) *FunctionDefinition {
+func parseFunction(fnc UnparsedFunction) *FunctionDefinition {
 	ret := FunctionDefinition{}
 	// begin by parsing the functions arguments if any exist
 	if len(fnc.Args) > 0 {
-		ret.Accepts = t.parseArguments(fnc.Args)
+		ret.Accepts = parseArguments(fnc.Args)
 	}
 	// parse the return type if the function has one
 	if len(fnc.Returns) > 0 {
-		ret.Returns = t.parseTypeToken(fnc.Returns, true)
+		ret.Returns = parseTypeToken(fnc.Returns, true)
 	}
 	// finally, parse the body of the function
-	ret.Operations = t.parseFunctionBody(fnc.Body)
+	ret.Operations = parseFunctionBody(fnc.Body)
 	ret.Name = fnc.Name
 	return &ret
 }
 
-func (t *Tokenizer) parseFunctionBody(body string) []*IntermediateOperation {
+func parseFunctionBody(body string) []*IntermediateOperation {
 	ret := []*IntermediateOperation{}
 	// parse each line of the function body
 	lines := strings.Split(body, "\n")
 	for _, line := range lines {
-		op := t.parseLine(line)
+		op := parseLine(line)
 		ret = append(ret, &op)
 	}
 	return ret
 }
 
-func (t *Tokenizer) parseLine(line string) IntermediateOperation {
+func parseLine(line string) IntermediateOperation {
 	tokens := strings.Split(line, " ")
 	// if this line is empty return a no-op which we will delete later in optimization
 	if len(tokens) == 0 || len(deleteWhitespace(line)) == 0 {
@@ -194,10 +176,10 @@ func (t *Tokenizer) parseLine(line string) IntermediateOperation {
 	}
 	// enter keyword parsing mode if the line begins with a keyword
 	if isKeyword(tokens[0]) {
-		return t.parseKeyWordLine(line, tokens[0])
+		return parseKeyWordLine(line, tokens[0])
 	}
 	// otherwise resolve this line in pure expression mode
-	return t.parseExpressionLine(line)
+	return parseExpressionLine(line)
 }
 
 func deleteWhitespace(str string) string {
@@ -209,37 +191,37 @@ func deleteWhitespace(str string) string {
 	}, str)
 }
 
-func (t *Tokenizer) parseKeyWordLine(line string, keyword string) IntermediateOperation {
+func parseKeyWordLine(line string, keyword string) IntermediateOperation {
 	switch keyword {
 	case "let":
-		return t.parseLetLine(line)
+		return parseLetLine(line)
 	case "for":
-		return t.parseForLine(line)
+		return parseForLine(line)
 	case "foreach":
-		return t.parseForeachLine(line)
+		return parseForeachLine(line)
 	case "break":
-		return t.parseBreakLine(line)
+		return parseBreakLine(line)
 	case "return":
-		return t.parseReturnLine(line)
+		return parseReturnLine(line)
 	case "}":
-		return t.parseClosingBracketLine(line)
+		return parseClosingBracketLine(line)
 	default:
 		panic(fmt.Sprintf("encountered unknown keyword %v", keyword))
 	}
 }
 
-func (t *Tokenizer) parseExpressionLine(line string) IntermediateOperation {
+func parseExpressionLine(line string) IntermediateOperation {
 	return IntermediateOperation{
 		Type: IM_EXPRESSION,
-		Args: []any{t.parseExpression(line)},
+		Args: []any{parseExpression(line)},
 	}
 }
 
-func (t *Tokenizer) parseExpression(expr string) *Expression {
+func parseExpression(expr string) *Expression {
 	// tokenize the expression
-	tokens := t.tokenizeExpression(expr)
+	tokens := tokenizeExpression(expr)
 	// check if the expression still contains operators
-	operatorExists := t.containsOperator(tokens)
+	operatorExists := containsOperator(tokens)
 	if !operatorExists {
 		// if there is more than one token we panic
 		if len(tokens) > 1 {
@@ -250,10 +232,10 @@ func (t *Tokenizer) parseExpression(expr string) *Expression {
 			return nil
 		}
 		// if there is exactly one token, we realize it
-		return t.realizeToken(tokens[0])
+		return realizeToken(tokens[0])
 	}
 	// otherwise build and return the operator tree
-	return t.buildExpressionTree(tokens)
+	return buildExpressionTree(tokens)
 }
 
 type ExpressionTreeNode struct {
@@ -275,7 +257,7 @@ func isPrioritizedOp(op string) bool {
 	return false
 }
 
-func (t *Tokenizer) buildExpressionTree(tokens []ExpressionToken) *Expression {
+func buildExpressionTree(tokens []ExpressionToken) *Expression {
 	// map out our tokens by their id
 	tokensByID := make(map[uint64]*ExpressionToken)
 	for _, token := range tokens {
@@ -297,48 +279,48 @@ func (t *Tokenizer) buildExpressionTree(tokens []ExpressionToken) *Expression {
 			break
 		}
 		// find the next operator in the priority chain
-		nextOpIndex := t.findNextOperator(tokens)
+		nextOpIndex := findNextOperator(tokens)
 		// create a node instance for it
 		node := &ExpressionTreeNode{
 			ID:       maxTokenID,
 			Left:     tokens[uint64(nextOpIndex-1)].ID,
 			Right:    tokens[uint64(nextOpIndex+1)].ID,
-			Operator: t.parseOperator(tokens[nextOpIndex].Value),
+			Operator: parseOperator(tokens[nextOpIndex].Value),
 		}
 		nodesByID[node.ID] = node
 		maxTokenID++
 		// save this as the root node if required
 		root = node
 		// replace the relevant tokens with a reference
-		newTokens := t.replaceOperation(tokens, nextOpIndex, node.ID)
+		newTokens := replaceOperation(tokens, nextOpIndex, node.ID)
 		// replace our tokens
 		tokens = newTokens
 	}
 	// generate the expression tree
-	return t.generateExpressionTree(root, nodesByID, tokensByID)
+	return generateExpressionTree(root, nodesByID, tokensByID)
 }
 
-func (t *Tokenizer) generateExpressionTree(cnode *ExpressionTreeNode, nodes map[uint64]*ExpressionTreeNode, tokens map[uint64]*ExpressionToken) *Expression {
+func generateExpressionTree(cnode *ExpressionTreeNode, nodes map[uint64]*ExpressionTreeNode, tokens map[uint64]*ExpressionToken) *Expression {
 	expression := &Expression{
 		Operator: cnode.Operator,
 	}
 	// if the left node is an op node, recursively resolve it
 	if nodes[cnode.Left] != nil {
-		expression.LeftExpression = t.generateExpressionTree(nodes[cnode.Left], nodes, tokens)
+		expression.LeftExpression = generateExpressionTree(nodes[cnode.Left], nodes, tokens)
 	}
 	// it the left node is a non-op node, realize it
 	if tokens[cnode.Left] != nil {
 		ctoken := tokens[cnode.Left]
-		expression.LeftExpression = t.realizeToken(*ctoken)
+		expression.LeftExpression = realizeToken(*ctoken)
 	}
 	// if the right node is an op node, recursively resolve it
 	if nodes[cnode.Right] != nil {
-		expression.RightExpression = t.generateExpressionTree(nodes[cnode.Right], nodes, tokens)
+		expression.RightExpression = generateExpressionTree(nodes[cnode.Right], nodes, tokens)
 	}
 	// it the left node is a non-op node, realize it
 	if tokens[cnode.Right] != nil {
 		ctoken := tokens[cnode.Right]
-		expression.RightExpression = t.realizeToken(*ctoken)
+		expression.RightExpression = realizeToken(*ctoken)
 	}
 	expression.Value = &BinaryTypedValue{
 		Type:  expression.LeftExpression.Value.Type,
@@ -352,7 +334,7 @@ type FunctionCallPlaceholder struct {
 	Args *Expression
 }
 
-func (t *Tokenizer) realizeFunctionCall(token ExpressionToken) *Expression {
+func realizeFunctionCall(token ExpressionToken) *Expression {
 	return &Expression{
 		LeftExpression:  nil,
 		RightExpression: nil,
@@ -360,8 +342,8 @@ func (t *Tokenizer) realizeFunctionCall(token ExpressionToken) *Expression {
 		Value: &BinaryTypedValue{
 			Type: BT_NOTYPE,
 			Value: &FunctionCallPlaceholder{
-				Name: t.getFunctionName(token.Value),
-				Args: t.parseExpression(t.getFunctionArgs(token.Value)),
+				Name: getFunctionName(token.Value),
+				Args: parseExpression(getFunctionArgs(token.Value)),
 			},
 		},
 	}
@@ -369,7 +351,7 @@ func (t *Tokenizer) realizeFunctionCall(token ExpressionToken) *Expression {
 
 var FUNCTION_ARG_REGEX = regexp.MustCompile(`(?m)(\(.*\))`)
 
-func (t *Tokenizer) getFunctionArgs(expr string) string {
+func getFunctionArgs(expr string) string {
 	match := FUNCTION_ARG_REGEX.FindString(expr)
 	if len(match) < 3 {
 		panic(fmt.Sprintf("invalid function call arguments %v", expr))
@@ -377,7 +359,7 @@ func (t *Tokenizer) getFunctionArgs(expr string) string {
 	return match[1 : len(match)-1]
 }
 
-func (t *Tokenizer) getFunctionName(expr string) string {
+func getFunctionName(expr string) string {
 	split := strings.Split(expr, "(")
 	if len(split) == 0 {
 		panic(fmt.Sprintf("invalid function call %v", expr))
@@ -385,11 +367,11 @@ func (t *Tokenizer) getFunctionName(expr string) string {
 	return split[0]
 }
 
-func (t *Tokenizer) stripBrackets(expr string) string {
+func stripBrackets(expr string) string {
 	return strings.TrimPrefix(strings.TrimSuffix(expr, ")"), "(")
 }
 
-func (t *Tokenizer) replaceOperation(tokens []ExpressionToken, opIndex int, opID uint64) []ExpressionToken {
+func replaceOperation(tokens []ExpressionToken, opIndex int, opID uint64) []ExpressionToken {
 	newTokens := []ExpressionToken{}
 	for idx, token := range tokens {
 		// skip both operands
@@ -410,7 +392,7 @@ func (t *Tokenizer) replaceOperation(tokens []ExpressionToken, opIndex int, opID
 	return newTokens
 }
 
-func (t *Tokenizer) parseOperator(op string) BinaryOperator {
+func parseOperator(op string) BinaryOperator {
 	switch op {
 	case "+":
 		return BO_PLUS
@@ -435,7 +417,7 @@ func (t *Tokenizer) parseOperator(op string) BinaryOperator {
 	}
 }
 
-func (t *Tokenizer) findNextOperator(tokens []ExpressionToken) int {
+func findNextOperator(tokens []ExpressionToken) int {
 	res := -1
 	for i := 0; i < len(tokens); i++ {
 		// skip all nodes that arent operators
@@ -456,20 +438,20 @@ func (t *Tokenizer) findNextOperator(tokens []ExpressionToken) int {
 }
 
 // realizeToken will conver a constant, function call or bracket block into an expression
-func (t *Tokenizer) realizeToken(token ExpressionToken) *Expression {
+func realizeToken(token ExpressionToken) *Expression {
 	switch token.TokenType {
 	case TK_LITERAL:
-		return t.realizeLiteral(token)
+		return realizeLiteral(token)
 	case TK_BRACKET:
-		return t.parseExpression(t.stripBrackets(token.Value))
+		return parseExpression(stripBrackets(token.Value))
 	case TK_FUNCTION:
-		return t.realizeFunctionCall(token)
+		return realizeFunctionCall(token)
 	default:
 		panic(fmt.Sprintf("invalid expression. cannot realize token %+v", token))
 	}
 }
 
-func (t *Tokenizer) realizeLiteral(token ExpressionToken) *Expression {
+func realizeLiteral(token ExpressionToken) *Expression {
 	// try to parse the token as an uint64
 	u64, err := strconv.ParseUint(token.Value, 10, 64)
 	if err == nil {
@@ -514,7 +496,7 @@ func (t *Tokenizer) realizeLiteral(token ExpressionToken) *Expression {
 	panic("invalid expression. cannot realize literal, no parsing mode has matched.")
 }
 
-func (t *Tokenizer) containsOperator(tokens []ExpressionToken) bool {
+func containsOperator(tokens []ExpressionToken) bool {
 	for _, expToken := range tokens {
 		if expToken.TokenType == TK_OPERATOR {
 			return true
@@ -562,7 +544,7 @@ const (
 	TK_REFERENCE TokenType = 6
 )
 
-func (t *Tokenizer) tokenizeExpression(expr string) []ExpressionToken {
+func tokenizeExpression(expr string) []ExpressionToken {
 	res := []ExpressionToken{}
 	current := ""
 	inString := false
@@ -737,7 +719,7 @@ func charIsOperator(c string) bool {
 // G3 is the optional value that is assigned
 var LET_LINE_REGEX = regexp.MustCompile(`(?m)let ([a-zA-z_]{1}[a-zA-Z0-9-_]*): ([a-zA-Z0-9]*)(?:[ \n]= (.*))?`)
 
-func (t *Tokenizer) parseLetLine(line string) IntermediateOperation {
+func parseLetLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
 		Type: IM_ASSIGN,
 		Args: make([]any, 3),
@@ -750,18 +732,18 @@ func (t *Tokenizer) parseLetLine(line string) IntermediateOperation {
 	// assign the symbol name to arg0
 	ret.Args[0] = matches[1]
 	// get the type of the symbol and assign it to arg1
-	parsedType := t.parseTypeToken(matches[2], false)
+	parsedType := parseTypeToken(matches[2], false)
 	ret.Args[1] = parsedType
 	// if there is a G3 match save it, otherwise determine the default value for this type
 	if len(matches) == 4 {
-		ret.Args[2] = t.parseExpression(matches[3])
+		ret.Args[2] = parseExpression(matches[3])
 	} else {
-		ret.Args[2] = t.generateDefaultValueForType(parsedType)
+		ret.Args[2] = generateDefaultValueForType(parsedType)
 	}
 	return ret
 }
 
-func (t *Tokenizer) generateDefaultValueForType(intermType IntermediateType) IntermediateExpression {
+func generateDefaultValueForType(intermType IntermediateType) IntermediateExpression {
 	return IntermediateExpression{}
 }
 
@@ -773,7 +755,7 @@ func (t *Tokenizer) generateDefaultValueForType(intermType IntermediateType) Int
 // G5 is the loop action (increment or decrement)
 var FOR_LINE_REGEX = regexp.MustCompile(`(?mU)for let ([a-zA-z_]{1}[a-zA-Z0-9-_]*): ([a-zA-Z0-9]*) = (.*); (.*);(.*) {`)
 
-func (t *Tokenizer) parseForLine(line string) IntermediateOperation {
+func parseForLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
 		Type: IM_FOR,
 		Args: make([]any, 5),
@@ -786,13 +768,13 @@ func (t *Tokenizer) parseForLine(line string) IntermediateOperation {
 	// save the name of the iterator to arg0
 	ret.Args[0] = matches[1]
 	// parse the iterator type and save it to arg1
-	parsedType := t.parseTypeToken(matches[2], false)
+	parsedType := parseTypeToken(matches[2], false)
 	ret.Args[1] = parsedType
 	// save the initial value of the iterator to arg3
-	parsedExpr := t.parseExpression(matches[3])
+	parsedExpr := parseExpression(matches[3])
 	ret.Args[2] = parsedExpr
 	// parse the loop condition into an expression
-	loopCond := t.parseExpression(matches[4])
+	loopCond := parseExpression(matches[4])
 	ret.Args[3] = loopCond
 	increment := false
 	// detect wether we are incrementing or decrementing
@@ -813,7 +795,7 @@ func (t *Tokenizer) parseForLine(line string) IntermediateOperation {
 // GS2 martches the list being iterated over
 var FOREACH_LINE_REGEX = regexp.MustCompile(`(?mU)foreach ([a-zA-z_]{1}[a-zA-Z0-9-_]*) in ([a-zA-z_]{1}[a-zA-Z0-9-_]*) {`)
 
-func (t *Tokenizer) parseForeachLine(line string) IntermediateOperation {
+func parseForeachLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
 		Type: IM_FOREACH,
 		Args: make([]any, 2),
@@ -831,7 +813,7 @@ func (t *Tokenizer) parseForeachLine(line string) IntermediateOperation {
 	return ret
 }
 
-func (t *Tokenizer) parseBreakLine(line string) IntermediateOperation {
+func parseBreakLine(line string) IntermediateOperation {
 	return IntermediateOperation{
 		Type: IM_BREAK,
 		Args: []any{},
@@ -842,7 +824,7 @@ func (t *Tokenizer) parseBreakLine(line string) IntermediateOperation {
 // G1 matches the name of the symbol being returned
 var RETURN_LINE_REGEX = regexp.MustCompile(`(?m)return( [a-zA-Z0-9+\-*/]*)?$`)
 
-func (t *Tokenizer) parseReturnLine(line string) IntermediateOperation {
+func parseReturnLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
 		Type: IM_RETURN,
 		Args: make([]any, 1),
@@ -858,19 +840,19 @@ func (t *Tokenizer) parseReturnLine(line string) IntermediateOperation {
 	return ret
 }
 
-func (t *Tokenizer) parseClosingBracketLine(line string) IntermediateOperation {
+func parseClosingBracketLine(line string) IntermediateOperation {
 	return IntermediateOperation{
 		Type: IM_CLOSING_BRACKET,
 		Args: []any{},
 	}
 }
 
-func (t *Tokenizer) parseTypeToken(token string, allowNoType bool) IntermediateType {
+func parseTypeToken(token string, allowNoType bool) IntermediateType {
 	var ret IntermediateType
 	// first, check composition type modifiers and recusively resolve
 	if strings.HasPrefix(token, "[]") {
 		trim := strings.TrimPrefix(token, "[]")
-		subType := t.parseTypeToken(trim, allowNoType)
+		subType := parseTypeToken(trim, allowNoType)
 		// abort the cascade down the three if we encounter a NOTYPE
 		if subType.Type == BT_NOTYPE {
 			ret.Type = BT_NOTYPE
@@ -881,7 +863,7 @@ func (t *Tokenizer) parseTypeToken(token string, allowNoType bool) IntermediateT
 		ret.Kind = ARRAY
 		return ret
 	}
-	singularType := t.singularTokenToSingular(token)
+	singularType := singularTokenToSingular(token)
 	if singularType == BT_NOTYPE && !allowNoType {
 		panic(fmt.Sprintf("encountered invalid type %v", token))
 	}
@@ -890,7 +872,7 @@ func (t *Tokenizer) parseTypeToken(token string, allowNoType bool) IntermediateT
 	return ret
 }
 
-func (t *Tokenizer) singularTokenToSingular(returns string) BinaryType {
+func singularTokenToSingular(returns string) BinaryType {
 	switch clean(returns) {
 	case "int8":
 		return BT_INT8
@@ -922,7 +904,7 @@ func (t *Tokenizer) singularTokenToSingular(returns string) BinaryType {
 	return BT_NOTYPE
 }
 
-func (t *Tokenizer) parseArguments(args string) []IntermediateVar {
+func parseArguments(args string) []IntermediateVar {
 	ret := []IntermediateVar{}
 	// split the args into comma separated list of variables and names
 	varsWithNames := strings.Split(args, ",")
@@ -933,20 +915,20 @@ func (t *Tokenizer) parseArguments(args string) []IntermediateVar {
 		}
 		current := IntermediateVar{
 			Name: words[0],
-			Type: t.parseTypeToken(words[1], false),
+			Type: parseTypeToken(words[1], false),
 		}
 		ret = append(ret, current)
 	}
 	return ret
 }
 
-func (t *Tokenizer) splitToLines(source string) []string {
+func splitToLines(source string) []string {
 	return strings.Split(source, "\n")
 }
 
 var FUNC_REGEX = regexp.MustCompile(`(?msU)func ([a-zA-Z_]{1}[a-zA-Z0-9_]*)\((.*)\) (?:=> ([a-zA-Z0-9]*) )?{\n(.*)}`)
 
-func (t *Tokenizer) findFunctions(source string) []UnparsedFunction {
+func findFunctions(source string) []UnparsedFunction {
 	funcs := []UnparsedFunction{}
 	matches := FUNC_REGEX.FindAllStringSubmatch(source, -1)
 	for _, match := range matches {

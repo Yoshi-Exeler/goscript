@@ -20,8 +20,7 @@ func (c *Compiler) Compile(job CompileJob) (*Program, error) {
 	if err != nil {
 		return nil, err
 	}
-	tokenizer := &Tokenizer{}
-	intermediate := tokenizer.parse(fqsc)
+	intermediate := parse(fqsc)
 	fmt.Println(intermediate)
 	return nil, nil
 }

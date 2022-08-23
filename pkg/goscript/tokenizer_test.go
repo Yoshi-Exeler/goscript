@@ -1,7 +1,6 @@
 package goscript
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -47,11 +46,112 @@ return 1
 // 	fmt.Printf("%+v\n", val.Value.(*uint64))
 // }
 
-func TestParseExprFunc(t *testing.T) {
+func TestParseExprAddition(t *testing.T) {
 	tokenizer := &Tokenizer{}
-	expr := tokenizer.parseExpression(`5==5 -      9*2.5 +11.5 +  2/1+ test(5+test2(5)) +1-(5*6)`)
-	fmt.Printf("TEST::%v\n", expr)
+	expr := tokenizer.parseExpression(`5+5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
-	fmt.Printf("%+v\n", val.Value.(*uint64))
+	res := *val.Value.(*uint64)
+	if res != 10 {
+		t.Fatalf("expected 5+5 to be 10 but was %v", res)
+	}
+}
+
+func TestParseExprAdditionF64(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`5.5+5.5`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	res := *val.Value.(*float64)
+	if res != 11 {
+		t.Fatalf("expected 5.5+5.5 to be 10 but was %v", res)
+	}
+}
+
+func TestParseExprSubtraction(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`10-5`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	res := *val.Value.(*uint64)
+	if res != 5 {
+		t.Fatalf("expected 5+5 to be 10 but was %v", res)
+	}
+}
+
+func TestParseExprSubtractionF64(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`10.5-5.5`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	res := *val.Value.(*float64)
+	if res != 5 {
+		t.Fatalf("expected 10.5-5.5 to be 10 but was %v", res)
+	}
+}
+
+func TestParseExprMultiplication(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`10*10`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	res := *val.Value.(*uint64)
+	if res != 100 {
+		t.Fatalf("expected 10*10 to be 100 but was %v", res)
+	}
+}
+
+func TestParseExprMultiplicationF64(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`10.0*0.5`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	res := *val.Value.(*float64)
+	if res != 5 {
+		t.Fatalf("expected 10.0*0.5 to be 5 but was %v", res)
+	}
+}
+
+func TestParseExprDivision(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`10/2`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	res := *val.Value.(*float64)
+	if res != 5 {
+		t.Fatalf("expected 10/2 to be 5 but was %v", res)
+	}
+}
+
+func TestParseExprDivisionF64(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`10.0/2.0`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	res := *val.Value.(*float64)
+	if res != 5 {
+		t.Fatalf("expected 10.0/2.0 to be 5 but was %v", res)
+	}
+}
+
+func TestParseExprSimpleOrder(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`5+10*10`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	res := *val.Value.(*uint64)
+	if res != 105 {
+		t.Fatalf("expected 10*10+5 to be 5 but was %v", res)
+	}
+}
+
+func TestParseExprSimpleBrackets(t *testing.T) {
+	tokenizer := &Tokenizer{}
+	expr := tokenizer.parseExpression(`(5+5)*10-(10-3*2)`)
+	rt := NewRuntime()
+	val := rt.ResolveExpression(expr)
+	res := *val.Value.(*uint64)
+	if res != 96 {
+		t.Fatalf("expected (5+5)*10-(10-2*2) to be 96 but was %v", res)
+	}
 }

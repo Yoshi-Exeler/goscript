@@ -138,7 +138,7 @@ func (bv *BinaryTypedValue) String() string {
 	case BT_ARRAY:
 		return "[...]"
 	default:
-		panic("unexpected type in unlink")
+		panic("unexpected type in stringify typed value")
 	}
 }
 

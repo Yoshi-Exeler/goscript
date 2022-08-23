@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 )
 
@@ -239,9 +238,6 @@ func (t *Tokenizer) parseExpressionLine(line string) IntermediateOperation {
 func (t *Tokenizer) parseExpression(expr string) *Expression {
 	// tokenize the expression
 	tokens := t.tokenizeExpression(expr)
-	for idx, tkn := range tokens {
-		fmt.Printf("[%v]:%v\n", idx, tkn.String())
-	}
 	// check if the expression still contains operators
 	operatorExists := t.containsOperator(tokens)
 	if !operatorExists {
@@ -317,41 +313,31 @@ func (t *Tokenizer) buildExpressionTree(tokens []ExpressionToken) *Expression {
 		newTokens := t.replaceOperation(tokens, nextOpIndex, node.ID)
 		// replace our tokens
 		tokens = newTokens
-		for _, tkn := range tokens {
-			fmt.Printf("%+v", tkn.String())
-		}
-		fmt.Println("")
-		time.Sleep(time.Millisecond * 250)
 	}
 	// generate the expression tree
 	return t.generateExpressionTree(root, nodesByID, tokensByID)
 }
 
 func (t *Tokenizer) generateExpressionTree(cnode *ExpressionTreeNode, nodes map[uint64]*ExpressionTreeNode, tokens map[uint64]*ExpressionToken) *Expression {
-	fmt.Printf("gen_expr_tree(%+v) %v\n", cnode, tokens)
 	expression := &Expression{
 		Operator: cnode.Operator,
 	}
 	// if the left node is an op node, recursively resolve it
 	if nodes[cnode.Left] != nil {
-		fmt.Printf("resolve_left(%+v)\n", nodes[cnode.Left])
 		expression.LeftExpression = t.generateExpressionTree(nodes[cnode.Left], nodes, tokens)
 	}
 	// it the left node is a non-op node, realize it
 	if tokens[cnode.Left] != nil {
 		ctoken := tokens[cnode.Left]
-		fmt.Printf("relize_left(%+v)\n", ctoken.String())
 		expression.LeftExpression = t.realizeToken(*ctoken)
 	}
 	// if the right node is an op node, recursively resolve it
 	if nodes[cnode.Right] != nil {
-		fmt.Printf("resolve_right(%+v)\n", nodes[cnode.Right])
 		expression.RightExpression = t.generateExpressionTree(nodes[cnode.Right], nodes, tokens)
 	}
 	// it the left node is a non-op node, realize it
 	if tokens[cnode.Right] != nil {
 		ctoken := tokens[cnode.Right]
-		fmt.Printf("relize_right(%+v)\n", ctoken.String())
 		expression.RightExpression = t.realizeToken(*ctoken)
 	}
 	expression.Value = &BinaryTypedValue{
@@ -375,7 +361,6 @@ func (t *Tokenizer) replaceOperation(tokens []ExpressionToken, opIndex int, opID
 	for idx, token := range tokens {
 		// skip both operands
 		if idx == opIndex-1 || idx == opIndex+1 {
-			fmt.Printf("skip=%v\n", token)
 			continue
 		}
 		// replace the actual index with out placeholder
@@ -389,7 +374,6 @@ func (t *Tokenizer) replaceOperation(tokens []ExpressionToken, opIndex int, opID
 		// copy everything else
 		newTokens = append(newTokens, token)
 	}
-	fmt.Printf("replace %v => %v\n", opIndex, newTokens)
 	return newTokens
 }
 
@@ -438,54 +422,15 @@ func (t *Tokenizer) findNextOperator(tokens []ExpressionToken) int {
 	return res
 }
 
-/*
-
-
-1 + 5  * (4+5) + 2 * (4*2)
-1 + [SOLVED] + 2 * (4*2)
-1 + [SOLVED] + [SOLVED]
-[SOLVED] + [SOLVED]
-[SOLVED]
-
-[5*(4+5),  2*(4*2),  5*(4+5)+1,  5*(4+5)+1+2*(4*2)]
-[a      ,  b      ,  c        ,  d                ]
-
-
-
-             +
-          +    (4*2)
-        *    2
-      5  (4+5)
-*/
-
-/*
-func IsPalindrome(s: string): boolean {
-	a int: = 0
-	b int: = len(s)-1
-	while a < b {
-		if s[a] != s[b] {
-			return false
-		}
-		a++
-		b--
-	}
-	return true
-}
-
-*/
-
 // realizeToken will conver a constant, function call or bracket block into an expression
 func (t *Tokenizer) realizeToken(token ExpressionToken) *Expression {
 	switch token.TokenType {
 	case TK_LITERAL:
 		return t.realizeLiteral(token)
 	case TK_BRACKET:
-		fmt.Printf("realize_brackets(%+v)\n", t.stripBrackets(token.Value))
 		return t.parseExpression(t.stripBrackets(token.Value))
 	case TK_FUNCTION:
 		return t.realizeFunctionCall(token)
-	// case TK_OPERATOR:
-	// 	return t.generateExpressionTree(token)
 	default:
 		panic(fmt.Sprintf("invalid expression. cannot realize token %+v", token))
 	}
@@ -498,7 +443,7 @@ func (t *Tokenizer) realizeLiteral(token ExpressionToken) *Expression {
 		return &Expression{
 			Value: &BinaryTypedValue{
 				Type:  BT_UINT64,
-				Value: u64,
+				Value: &u64,
 			},
 			Operator: BO_CONSTANT,
 		}
@@ -508,7 +453,7 @@ func (t *Tokenizer) realizeLiteral(token ExpressionToken) *Expression {
 		return &Expression{
 			Value: &BinaryTypedValue{
 				Type:  BT_INT64,
-				Value: i64,
+				Value: &i64,
 			},
 			Operator: BO_CONSTANT,
 		}
@@ -518,7 +463,7 @@ func (t *Tokenizer) realizeLiteral(token ExpressionToken) *Expression {
 		return &Expression{
 			Value: &BinaryTypedValue{
 				Type:  BT_FLOAT64,
-				Value: f64,
+				Value: &f64,
 			},
 			Operator: BO_CONSTANT,
 		}
@@ -528,7 +473,7 @@ func (t *Tokenizer) realizeLiteral(token ExpressionToken) *Expression {
 		return &Expression{
 			Value: &BinaryTypedValue{
 				Type:  BT_BOOLEAN,
-				Value: b,
+				Value: &b,
 			},
 			Operator: BO_CONSTANT,
 		}
@@ -870,7 +815,6 @@ func (t *Tokenizer) parseReturnLine(line string) IntermediateOperation {
 		Args: make([]any, 1),
 	}
 	// use the let line regex to extract the various components of a let line
-	fmt.Printf("'%v'\n", line)
 	matches := RETURN_LINE_REGEX.FindStringSubmatch(line)
 	if len(matches) != 2 && len(matches) != 1 {
 		panic(fmt.Sprintf("unexpected number of segments in return match (expected 1 || 2 but got %v)", len(matches)))

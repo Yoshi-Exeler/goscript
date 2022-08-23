@@ -44,37 +44,37 @@ func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator, 
 	case BO_MINUS:
 		switch l.Type {
 		case BT_INT8:
-			v.Value = genericMinus[int8](l.Value, r.Value)
+			genericMinus[int8](l.Value, r.Value, v)
 			return v
 		case BT_INT16:
-			v.Value = genericMinus[int16](l.Value, r.Value)
+			genericMinus[int16](l.Value, r.Value, v)
 			return v
 		case BT_INT32:
-			v.Value = genericMinus[int32](l.Value, r.Value)
+			genericMinus[int32](l.Value, r.Value, v)
 			return v
 		case BT_INT64:
-			v.Value = genericMinus[int64](l.Value, r.Value)
+			genericMinus[int64](l.Value, r.Value, v)
 			return v
 		case BT_UINT8:
-			v.Value = genericMinus[uint8](l.Value, r.Value)
+			genericMinus[uint8](l.Value, r.Value, v)
 			return v
 		case BT_UINT16:
-			v.Value = genericMinus[uint16](l.Value, r.Value)
+			genericMinus[uint16](l.Value, r.Value, v)
 			return v
 		case BT_UINT32:
-			v.Value = genericMinus[uint32](l.Value, r.Value)
+			genericMinus[uint32](l.Value, r.Value, v)
 			return v
 		case BT_UINT64:
-			v.Value = genericMinus[uint64](l.Value, r.Value)
+			genericMinus[uint64](l.Value, r.Value, v)
 			return v
 		case BT_BYTE:
-			v.Value = genericMinus[byte](l.Value, r.Value)
+			genericMinus[byte](l.Value, r.Value, v)
 			return v
 		case BT_FLOAT32:
-			v.Value = genericMinus[float32](l.Value, r.Value)
+			genericMinus[float32](l.Value, r.Value, v)
 			return v
 		case BT_FLOAT64:
-			v.Value = genericMinus[float64](l.Value, r.Value)
+			genericMinus[float64](l.Value, r.Value, v)
 			return v
 		default:
 			panic("invalid type for minus operator")
@@ -120,37 +120,37 @@ func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator, 
 	case BO_DIVIDE:
 		switch l.Type {
 		case BT_INT8:
-			v.Value = genericDivide[int8](l.Value, r.Value)
+			genericDivide[int8](l.Value, r.Value, v)
 			return v
 		case BT_INT16:
-			v.Value = genericDivide[int16](l.Value, r.Value)
+			genericDivide[int16](l.Value, r.Value, v)
 			return v
 		case BT_INT32:
-			v.Value = genericDivide[int32](l.Value, r.Value)
+			genericDivide[int32](l.Value, r.Value, v)
 			return v
 		case BT_INT64:
-			v.Value = genericDivide[int64](l.Value, r.Value)
+			genericDivide[int64](l.Value, r.Value, v)
 			return v
 		case BT_UINT8:
-			v.Value = genericDivide[uint8](l.Value, r.Value)
+			genericDivide[uint8](l.Value, r.Value, v)
 			return v
 		case BT_UINT16:
-			v.Value = genericDivide[uint16](l.Value, r.Value)
+			genericDivide[uint16](l.Value, r.Value, v)
 			return v
 		case BT_UINT32:
-			v.Value = genericDivide[uint32](l.Value, r.Value)
+			genericDivide[uint32](l.Value, r.Value, v)
 			return v
 		case BT_UINT64:
-			v.Value = genericDivide[uint64](l.Value, r.Value)
+			genericDivide[uint64](l.Value, r.Value, v)
 			return v
 		case BT_BYTE:
-			v.Value = genericDivide[byte](l.Value, r.Value)
+			genericDivide[byte](l.Value, r.Value, v)
 			return v
 		case BT_FLOAT32:
-			v.Value = genericDivide[float32](l.Value, r.Value)
+			genericDivide[float32](l.Value, r.Value, v)
 			return v
 		case BT_FLOAT64:
-			v.Value = genericDivide[float64](l.Value, r.Value)
+			genericDivide[float64](l.Value, r.Value, v)
 			return v
 		default:
 			panic("invalid type for divide operator")
@@ -371,35 +371,35 @@ func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator, 
 	}
 }
 
-func genericEquals[T comparable](l any, r any) any {
-	return l.(T) == r.(T)
+func genericEquals[T comparable](l any, r any) bool {
+	return *l.(*T) == *r.(*T)
 }
 
-func genericGreater[T Numeric](l any, r any) any {
-	return l.(T) > r.(T)
+func genericGreater[T Numeric](l any, r any) bool {
+	return *l.(*T) > *r.(*T)
 }
 
-func genericLesser[T Numeric](l any, r any) any {
+func genericLesser[T Numeric](l any, r any) bool {
 	lptr := l.(*T)
 	rptr := r.(*T)
 	return *lptr < *rptr
 
 }
 
-func genericGreaterEquals[T Numeric](l any, r any) any {
-	return l.(T) >= r.(T)
+func genericGreaterEquals[T Numeric](l any, r any) bool {
+	return *l.(*T) >= *r.(*T)
 }
 
-func genericLesserEquals[T Numeric](l any, r any) any {
-	return l.(T) <= r.(T)
+func genericLesserEquals[T Numeric](l any, r any) bool {
+	return *l.(*T) <= *r.(*T)
 }
 
 func genericPlus[T Numeric](l any, r any, v *BinaryTypedValue) {
 	*v.Value.(*T) = *l.(*T) + *r.(*T)
 }
 
-func genericMinus[T Numeric](l any, r any) any {
-	return l.(T) - r.(T)
+func genericMinus[T Numeric](l any, r any, v *BinaryTypedValue) {
+	*v.Value.(*T) = *l.(*T) - *r.(*T)
 }
 
 func genericMultiply[T Numeric](l any, r any, v any) {
@@ -409,6 +409,7 @@ func genericMultiply[T Numeric](l any, r any, v any) {
 	*vptr = *lptr * *rptr
 }
 
-func genericDivide[T Numeric](l any, r any) any {
-	return float64(l.(T)) / float64(r.(T))
+func genericDivide[T Numeric](l any, r any, v *BinaryTypedValue) {
+	result := float64(*l.(*T)) / float64(*r.(*T))
+	v.Value = &result
 }

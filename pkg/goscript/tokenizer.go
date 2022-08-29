@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -125,21 +126,33 @@ type UnparsedFunction struct {
 
 // Parse is the main entrypoint for the tokenizer
 func parse(source string) *IntermediateProgram {
+	fmt.Println("[GSC][parse] begin parsing")
+	start := time.Now()
 	ret := &IntermediateProgram{}
 	// extract the function definitions from the source code
-	functions := findFunctions(source)
-	// output our function definitions
+	fmt.Println("[GSC][findFunctions] begin findFunctions")
+	startFindFuncs := time.Now()
+	functions, mainFunc := findFunctions(source)
+	fmt.Printf("[GSC][STAGE_COMPLETION] findFunctions completed in %v\n", time.Since(startFindFuncs))
 	// parse the functions
+	fmt.Println("[GSC][parseFunctions] begin parseFunctions")
+	startParseFuncs := time.Now()
 	parsedFunctions := []*FunctionDefinition{}
 	for _, function := range functions {
-		parsedFunctions = append(parsedFunctions, parseFunction(function))
+		if function.Name != "main" {
+			parsedFunctions = append(parsedFunctions, parseFunction(function))
+		}
 	}
-	ret.Entrypoint = "main"
+	ret.Entrypoint = *parseFunction(mainFunc)
 	ret.Functions = parsedFunctions
+	fmt.Printf("[GSC][STAGE_COMPLETION] parseFunctions completed in %v\n", time.Since(startParseFuncs))
+	fmt.Printf("[GSC][STAGE_COMPLETION] parsing completed in %v\n", time.Since(start))
 	return ret
 }
 
 func parseFunction(fnc UnparsedFunction) *FunctionDefinition {
+	fmt.Printf("[GSC][parseFunctions] parsing %v", fnc.Name)
+	start := time.Now()
 	ret := FunctionDefinition{}
 	// begin by parsing the functions arguments if any exist
 	if len(fnc.Args) > 0 {
@@ -152,6 +165,7 @@ func parseFunction(fnc UnparsedFunction) *FunctionDefinition {
 	// finally, parse the body of the function
 	ret.Operations = parseFunctionBody(fnc.Body)
 	ret.Name = fnc.Name
+	fmt.Printf("  OK  %v\n", time.Since(start))
 	return &ret
 }
 
@@ -354,6 +368,9 @@ var FUNCTION_ARG_REGEX = regexp.MustCompile(`(?m)(\(.*\))`)
 func getFunctionArgs(expr string) string {
 	match := FUNCTION_ARG_REGEX.FindString(expr)
 	if len(match) < 3 {
+		if strings.Contains(expr, "()") {
+			return ""
+		}
 		panic(fmt.Sprintf("invalid function call arguments %v", expr))
 	}
 	return match[1 : len(match)-1]
@@ -446,6 +463,14 @@ func realizeToken(token ExpressionToken) *Expression {
 		return parseExpression(stripBrackets(token.Value))
 	case TK_FUNCTION:
 		return realizeFunctionCall(token)
+	case TK_STRING:
+		return &Expression{
+			Operator: BO_CONSTANT,
+			Value: &BinaryTypedValue{
+				Type:  BT_STRING,
+				Value: strings.TrimPrefix(strings.TrimSuffix(token.Value, "\""), "\""),
+			},
+		}
 	default:
 		panic(fmt.Sprintf("invalid expression. cannot realize token %+v", token))
 	}
@@ -829,7 +854,7 @@ func parseBreakLine(line string) IntermediateOperation {
 
 // match return statements 'return test'
 // G1 matches the name of the symbol being returned
-var RETURN_LINE_REGEX = regexp.MustCompile(`(?m)return( [a-zA-Z0-9+\-*/]*)?$`)
+var RETURN_LINE_REGEX = regexp.MustCompile(`(?m)return\s?(.*)?$`)
 
 func parseReturnLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
@@ -838,11 +863,16 @@ func parseReturnLine(line string) IntermediateOperation {
 	}
 	// use the let line regex to extract the various components of a let line
 	matches := RETURN_LINE_REGEX.FindStringSubmatch(line)
-	if len(matches) != 2 && len(matches) != 1 {
-		panic(fmt.Sprintf("unexpected number of segments in return match (expected 1 || 2 but got %v)", len(matches)))
+	if len(matches) > 2 {
+		panic(fmt.Sprintf("unexpected number of segments in return match (expected 1 but got %v)", len(matches)))
 	}
-	// save the name of the symbol being returned to arg0
-	ret.Args[0] = matches[1]
+	if len(matches) == 0 {
+		return ret
+	}
+	// save the returned expression to arg0
+	if len(deleteWhitespace((matches[1]))) != 0 {
+		ret.Args[0] = parseExpression(matches[1])
+	}
 	// yield the op
 	return ret
 }
@@ -916,7 +946,13 @@ func parseArguments(args string) []IntermediateVar {
 	// split the args into comma separated list of variables and names
 	varsWithNames := strings.Split(args, ",")
 	for _, varWithName := range varsWithNames {
-		words := strings.Split(varWithName, " ")
+		rawWords := strings.Split(varWithName, " ")
+		words := []string{}
+		for _, word := range rawWords {
+			if len(deleteWhitespace(word)) != 0 {
+				words = append(words, deleteWhitespace(word))
+			}
+		}
 		if len(words) != 2 {
 			panic(fmt.Sprintf("typed variable token %v has an invalid segment length (expected 2 but got %v)%v", varWithName, len(words), words))
 		}
@@ -935,18 +971,29 @@ func splitToLines(source string) []string {
 
 var FUNC_REGEX = regexp.MustCompile(`(?msU)func ([a-zA-Z_]{1}[a-zA-Z0-9_]*)\((.*)\) (?:=> ([a-zA-Z0-9]*) )?{\n(.*)}`)
 
-func findFunctions(source string) []UnparsedFunction {
+func findFunctions(source string) ([]UnparsedFunction, UnparsedFunction) {
 	funcs := []UnparsedFunction{}
+	mainFunc := UnparsedFunction{}
 	matches := FUNC_REGEX.FindAllStringSubmatch(source, -1)
 	for _, match := range matches {
+		fmt.Printf("[GSC][findFunctions] found %v\n", match[1])
 		funcs = append(funcs, UnparsedFunction{
 			Name:    match[1],
 			Args:    match[2],
 			Returns: match[3],
 			Body:    match[4],
 		})
+		if match[1] == "main" {
+			mainFunc = UnparsedFunction{
+				Name:    match[1],
+				Args:    match[2],
+				Returns: match[3],
+				Body:    match[4],
+			}
+		}
 	}
-	return funcs
+	fmt.Printf("[GSC][findFunctions] %v functions found\n", len(funcs))
+	return funcs, mainFunc
 }
 
 // clean returns s with all leading and trailing whitespace trimmed

@@ -7,7 +7,7 @@ import "ext/jwt"
 
 // the main function does some stuff
 func main() {
-    let x: string = "db.Connect"
-    let y: string = `db.Connect`
-    db.Connect()
+let x: string = "db.Connect"
+let y: string = `db.Connect`
+db.Connect()
 }

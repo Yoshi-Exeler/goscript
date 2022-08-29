@@ -345,6 +345,8 @@ func defaultValuePtrOf(valueType BinaryType) any {
 	case BT_ARRAY:
 		zero := []*BinaryTypedValue{}
 		return &zero
+	case BT_NOTYPE:
+		return nil
 	default:
 		panic("invalid type")
 	}

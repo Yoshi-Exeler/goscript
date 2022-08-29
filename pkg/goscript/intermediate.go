@@ -3,7 +3,7 @@ package goscript
 import "fmt"
 
 type IntermediateProgram struct {
-	Entrypoint string
+	Entrypoint FunctionDefinition
 	Functions  []*FunctionDefinition
 }
 

@@ -52,7 +52,7 @@ func TestAssignArrayConstant(t *testing.T) {
 }
 
 func TestArrayIndexInto(t *testing.T) {
-	zero := 0
+	zero := int64(0)
 	eleven := uint8(11)
 	testProgram := Program{
 		Operations: []BinaryOperation{

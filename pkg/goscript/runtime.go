@@ -403,7 +403,7 @@ func (r *Runtime) indexIntoExpression(e *Expression) *BinaryTypedValue {
 	// resolve the index expression
 	index := r.ResolveExpression(e.Value.Value.(*Expression))
 	// index into the symbol
-	return (*symbol.Value.(*[]*BinaryTypedValue))[*index.Value.(*int)]
+	return (*symbol.Value.(*[]*BinaryTypedValue))[indirectCast[int](*index)]
 }
 
 // exec will execute the expression as a function, assuming that it has been type checked before

@@ -1,5 +1,7 @@
 package goscript
 
+import "fmt"
+
 // applyOperator applies the specified operator to the specified values, assuming that the operation has been type checked before
 func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator, v *BinaryTypedValue) *BinaryTypedValue {
 	switch op {
@@ -412,4 +414,41 @@ func genericMultiply[T Numeric](l any, r any, v any) {
 func genericDivide[T Numeric](l any, r any, v *BinaryTypedValue) {
 	result := float64(*l.(*T)) / float64(*r.(*T))
 	v.Value = &result
+}
+
+func genericCast[T Numeric, RT Numeric](value any) RT {
+	return RT(value.(T))
+}
+
+func genericIndirectCast[T Numeric, RT Numeric](value any) RT {
+	return RT(*value.(*T))
+}
+
+func indirectCast[RT Numeric](value BinaryTypedValue) RT {
+	switch value.Type {
+	case BT_INT8:
+		return genericIndirectCast[int8, RT](value.Value)
+	case BT_INT16:
+		return genericIndirectCast[int16, RT](value.Value)
+	case BT_INT32:
+		return genericIndirectCast[int32, RT](value.Value)
+	case BT_INT64:
+		return genericIndirectCast[int64, RT](value.Value)
+	case BT_UINT8:
+		return genericIndirectCast[uint8, RT](value.Value)
+	case BT_UINT16:
+		return genericIndirectCast[uint16, RT](value.Value)
+	case BT_UINT32:
+		return genericIndirectCast[uint32, RT](value.Value)
+	case BT_UINT64:
+		return genericIndirectCast[uint64, RT](value.Value)
+	case BT_BYTE:
+		return genericIndirectCast[byte, RT](value.Value)
+	case BT_FLOAT32:
+		return genericIndirectCast[float32, RT](value.Value)
+	case BT_FLOAT64:
+		return genericIndirectCast[float64, RT](value.Value)
+	default:
+		panic(fmt.Sprintf("unknown type %v in indirect cast", value.Type))
+	}
 }

@@ -137,6 +137,8 @@ func (bv *BinaryTypedValue) String() string {
 		return fmt.Sprint(*bv.Value.(*bool))
 	case BT_ARRAY:
 		return "[...]"
+	case BT_EXPRESSION:
+		return fmt.Sprintf(bv.Value.(*Expression).String())
 	case BT_NOTYPE:
 		return "NOTYPE"
 	default:
@@ -236,24 +238,25 @@ func NewCallFunctionOp(functionExpression *Expression) BinaryOperation {
 type BinaryType byte
 
 const (
-	BT_INT8    BinaryType = 1
-	BT_INT16   BinaryType = 2
-	BT_INT32   BinaryType = 3
-	BT_INT64   BinaryType = 4
-	BT_UINT8   BinaryType = 5
-	BT_UINT16  BinaryType = 6
-	BT_UINT32  BinaryType = 7
-	BT_UINT64  BinaryType = 8
-	BT_STRING  BinaryType = 9
-	BT_CHAR    BinaryType = 10
-	BT_BYTE    BinaryType = 11
-	BT_FLOAT32 BinaryType = 12
-	BT_FLOAT64 BinaryType = 13
-	BT_ANY     BinaryType = 14
-	BT_STRUCT  BinaryType = 15
-	BT_BOOLEAN BinaryType = 16
-	BT_ARRAY   BinaryType = 17
-	BT_NOTYPE  BinaryType = 18
+	BT_INT8       BinaryType = 1
+	BT_INT16      BinaryType = 2
+	BT_INT32      BinaryType = 3
+	BT_INT64      BinaryType = 4
+	BT_UINT8      BinaryType = 5
+	BT_UINT16     BinaryType = 6
+	BT_UINT32     BinaryType = 7
+	BT_UINT64     BinaryType = 8
+	BT_STRING     BinaryType = 9
+	BT_CHAR       BinaryType = 10
+	BT_BYTE       BinaryType = 11
+	BT_FLOAT32    BinaryType = 12
+	BT_FLOAT64    BinaryType = 13
+	BT_ANY        BinaryType = 14
+	BT_STRUCT     BinaryType = 15
+	BT_BOOLEAN    BinaryType = 16
+	BT_ARRAY      BinaryType = 17
+	BT_NOTYPE     BinaryType = 18
+	BT_EXPRESSION BinaryType = 19
 )
 
 func (b BinaryType) String() string {
@@ -439,13 +442,13 @@ func NewArrayExpression(elements []*BinaryTypedValue, valueType BinaryType) *Exp
 	}
 }
 
-func NewIndexIntoExpression(symbol int, index *Expression, elemType BinaryType) *Expression {
+func NewIndexIntoExpression(symbol int, index *Expression) *Expression {
 	return &Expression{
 		LeftExpression:  nil,
 		RightExpression: nil,
 		Operator:        BO_INDEX_INTO,
 		Value: &BinaryTypedValue{
-			Type:  elemType,
+			Type:  BT_EXPRESSION,
 			Value: index,
 		},
 		Ref: symbol,

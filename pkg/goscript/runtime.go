@@ -112,7 +112,7 @@ func (r *Runtime) execGrow(operation *BinaryOperation) {
 	for i := prevLast; i < len(array); i++ {
 		array[i] = &BinaryTypedValue{
 			Type:  elemType,
-			Value: r.defaultValueOf(elemType),
+			Value: defaultValuePtrOf(elemType),
 		}
 	}
 	// save the result back to the symbol table

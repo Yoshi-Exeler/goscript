@@ -365,7 +365,7 @@ func (r *Runtime) execIndexAssign(operation *BinaryOperation) {
 	// get the expression from arg2
 	expression := operation.Args[2].(*Expression)
 	// resolve the expression and  assign the resolution to the referenced symbol, without linking it to the expression
-	r.unlinkedAssign(r.SymbolTable[symbolRef].Value.([]*BinaryTypedValue)[index.Value.(int)], r.ResolveExpression(expression))
+	r.unlinkedAssign((*r.SymbolTable[symbolRef].Value.(*[]*BinaryTypedValue))[index.Value.(int)], r.ResolveExpression(expression))
 }
 
 // ResolveExpression will recursively resolve the expression to a typed value.

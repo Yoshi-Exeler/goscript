@@ -62,7 +62,7 @@ func TestArrayIndexInto(t *testing.T) {
 				Value: &eleven,
 			}}, BT_ARRAY)),
 			NewBindOp(2, BT_UINT8),
-			NewAssignExpressionOp(2, NewIndexIntoExpression(1, NewConstantExpression(&zero, BT_INT64))),
+			NewAssignExpressionOp(2, NewIndexIntoExpression(1, NewConstantExpression(&zero, BT_INT64), BT_UINT8)),
 			NewReturnValueOp(NewVSymbolExpression(2))},
 		SymbolTableSize: 4,
 	}

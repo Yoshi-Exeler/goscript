@@ -439,13 +439,13 @@ func NewArrayExpression(elements []*BinaryTypedValue, valueType BinaryType) *Exp
 	}
 }
 
-func NewIndexIntoExpression(symbol int, index *Expression) *Expression {
+func NewIndexIntoExpression(symbol int, index *Expression, elemType BinaryType) *Expression {
 	return &Expression{
 		LeftExpression:  nil,
 		RightExpression: nil,
 		Operator:        BO_INDEX_INTO,
 		Value: &BinaryTypedValue{
-			Type:  BT_NOTYPE,
+			Type:  elemType,
 			Value: index,
 		},
 		Ref: symbol,

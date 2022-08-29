@@ -100,6 +100,8 @@ func (r *Runtime) execGrow(operation *BinaryOperation) {
 	symbolRef := operation.Args[0].(int)
 	// get the amount to grow by from arg1
 	amount := operation.Args[1].(int)
+	// get the type from arg2
+	elemType := operation.Args[2].(BinaryType)
 	// fetch the array from the symbol table
 	array := *r.SymbolTable[symbolRef].Value.(*[]*BinaryTypedValue)
 	// save the last index of the current array
@@ -109,8 +111,8 @@ func (r *Runtime) execGrow(operation *BinaryOperation) {
 	// initialize the new values correctly
 	for i := prevLast; i < len(array); i++ {
 		array[i] = &BinaryTypedValue{
-			Type:  array[0].Type,
-			Value: r.defaultValueOf(array[0].Type),
+			Type:  elemType,
+			Value: r.defaultValueOf(elemType),
 		}
 	}
 	// save the result back to the symbol table

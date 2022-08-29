@@ -163,10 +163,10 @@ func NewIndexAssignOp(symbol int, index *Expression, expression *Expression) Bin
 	}
 }
 
-func NewGrowOperation(symbolRef int, amount int) BinaryOperation {
+func NewGrowOperation(symbolRef int, amount int, elemType BinaryType) BinaryOperation {
 	return BinaryOperation{
 		Type: GROW,
-		Args: []any{symbolRef, amount},
+		Args: []any{symbolRef, amount, elemType},
 	}
 }
 

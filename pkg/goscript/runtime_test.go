@@ -85,7 +85,7 @@ func TestArrayGrow(t *testing.T) {
 				Type:  BT_UINT8,
 				Value: &eleven,
 			}}, BT_ARRAY)),
-			NewGrowOperation(1, 10),
+			NewGrowOperation(1, 10, BT_UINT8),
 			NewReturnValueOp(NewVSymbolExpression(1))},
 		SymbolTableSize: 4,
 	}

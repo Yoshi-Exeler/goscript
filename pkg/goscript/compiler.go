@@ -13,6 +13,8 @@ type Compiler struct {
 	currentSymbolIndex   int
 	calledFunctionByName map[string]bool
 	currentProgram       *Program
+	currentOpIndex       int
+	currentFunction      *FunctionDefinition
 }
 
 func NewCompiler() *Compiler {
@@ -92,12 +94,138 @@ func (c *Compiler) generateProgram(intermediate *IntermediateProgram) (*Program,
 	c.compileFunction(&intermediate.Entrypoint)
 	fmt.Printf("[GSC][STAGE_COMPLETION] generating bytecode completed in %v\n", time.Since(startGenBytecode))
 	fmt.Printf("[GSC][generateProgram] completed in %v\n", time.Since(start))
-	return nil, nil
+	c.currentProgram.SymbolTableSize = len(c.symbolIndexByName)
+	return c.currentProgram, nil
 }
 
-func (c *Compiler) compileFunction(def *FunctionDefinition) []Operation {
-	//
-	return nil
+func (c *Compiler) compileFunction(def *FunctionDefinition) {
+	c.currentFunction = def
+	for {
+		if len(c.currentFunction.Operations)-1 == c.currentOpIndex {
+			return
+		}
+		op := c.currentFunction.Operations[c.currentOpIndex]
+		switch op.Type {
+		case IM_ASSIGN:
+			c.generateAssign(op)
+		case IM_BREAK:
+			panic("break is not implemented in compileFunction")
+		case IM_CLOSING_BRACKET:
+			panic("should not reach closig bracket outside of inner parser")
+		case IM_EXPRESSION:
+			c.generateExpression(op)
+		case IM_FOR:
+			c.generateLoop(op)
+		case IM_FOREACH:
+			panic("foreach is not implemented in compileFunction")
+		case IM_RETURN:
+			c.generateReturn(op)
+		case IM_NOP:
+		default:
+			panic(fmt.Sprintf("unkndown operation %v cannot compile", op.Type))
+		}
+		c.currentOpIndex++
+	}
+}
+
+func (c *Compiler) generateClosingBracket() {
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewExitScopeOp())
+}
+
+func (c *Compiler) generateLoop(op *IntermediateOperation) {
+	iteratorRef := c.symbolIndexByName[op.Args[0].(string)]
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewEnterScope())
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewBindOp(iteratorRef, op.Args[1].(IntermediateType).Type))
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewAssignExpressionOp(iteratorRef, c.fixVsymbols(op.Args[2].(*Expression))))
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewJumpIfNotOp(1, c.fixVsymbols(op.Args[3].(*Expression))))
+	loopHeadAddr := len(c.currentProgram.Operations) - 1
+	c.currentOpIndex++
+	c.generateUntilClose()
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewJumpOp(loopHeadAddr))
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewExitScopeOp())
+	loopEndAddr := len(c.currentProgram.Operations) - 1
+	c.currentProgram.Operations[loopHeadAddr] = NewJumpIfNotOp(loopEndAddr, c.fixVsymbols(op.Args[3].(*Expression)))
+}
+
+func (c *Compiler) fixVsymbols(expr *Expression) *Expression {
+	if expr.Operator == BO_VSYMBOL_PLACEHOLDER {
+		expr.Operator = BO_VSYMBOL
+		expr.Ref = c.symbolIndexByName[expr.Value.Value.(string)]
+		expr.Value = nil
+	}
+	if expr.LeftExpression != nil {
+		expr.LeftExpression = c.fixVsymbols(expr.LeftExpression)
+	}
+	if expr.RightExpression != nil {
+		expr.RightExpression = c.fixVsymbols(expr.RightExpression)
+	}
+	return expr
+}
+
+func (c *Compiler) fixFunctionCalls(expr *Expression) *Expression {
+	if expr.Operator == BO_FUNCTION_CALL_PLACEHOLDER {
+		expr.Operator = BO_FUNCTION_CALL
+		// check if we have a base address for this function
+		if c.funcBaseByName[expr.Value.Value.(*FunctionCallPlaceholder).Name] == 0 {
+			// if not base exists for this function, check our known functions
+			sideFunc := c.funcsByName[expr.Value.Value.(*FunctionCallPlaceholder).Name]
+			if sideFunc == nil {
+				panic(fmt.Sprintf("cannot call undefined function %v", expr.Value.Value.(*FunctionCallPlaceholder).Name))
+			}
+		}
+		expr.Ref = c.funcBaseByName[expr.Value.Value.(*FunctionCallPlaceholder).Name]
+	}
+	if expr.LeftExpression != nil {
+		expr.LeftExpression = c.fixFunctionCalls(expr.LeftExpression)
+	}
+	if expr.RightExpression != nil {
+		expr.RightExpression = c.fixFunctionCalls(expr.RightExpression)
+	}
+	return expr
+}
+
+func (c *Compiler) generateUntilClose() {
+	for {
+		op := c.currentFunction.Operations[c.currentOpIndex]
+		switch op.Type {
+		case IM_ASSIGN:
+			c.generateAssign(op)
+		case IM_BREAK:
+			panic("break is not implemented in generateUntilClose")
+		case IM_CLOSING_BRACKET:
+			return
+		case IM_EXPRESSION:
+			c.generateExpression(op)
+		case IM_FOR:
+			c.generateLoop(op)
+		case IM_FOREACH:
+			panic("foreach is not implemented in generateUntilClose")
+		case IM_RETURN:
+			c.generateReturn(op)
+		case IM_NOP:
+		default:
+			panic(fmt.Sprintf("unkndown operation %v cannot compile", op.Type))
+		}
+		c.currentOpIndex++
+	}
+
+}
+
+func (c *Compiler) generateReturn(op *IntermediateOperation) {
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewReturnValueOp(c.fixVsymbols(op.Args[0].(*Expression))))
+}
+
+func (c *Compiler) generateExpression(op *IntermediateOperation) {
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewExpressionOp(c.fixVsymbols(op.Args[0].(*Expression))))
+}
+
+func (c *Compiler) generateAssign(op *IntermediateOperation) {
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewBindOp(c.symbolIndexByName[op.Args[0].(string)], op.Args[1].(IntermediateType).Type))
+	if len(op.Args) == 3 {
+		c.currentProgram.Operations = append(c.currentProgram.Operations, NewAssignExpressionOp(c.symbolIndexByName[op.Args[0].(string)], c.fixVsymbols(op.Args[2].(*Expression))))
+	} else {
+		c.currentProgram.Operations = append(c.currentProgram.Operations, NewAssignExpressionOp(c.symbolIndexByName[op.Args[0].(string)], NewConstantExpression(defaultValuePtrOf(op.Args[1].(IntermediateType).Type), op.Args[1].(IntermediateType).Type)))
+	}
 }
 
 func (c *Compiler) prescanFunction(def *FunctionDefinition) {

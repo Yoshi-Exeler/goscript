@@ -165,7 +165,7 @@ func parseFunction(fnc UnparsedFunction) *FunctionDefinition {
 	// finally, parse the body of the function
 	ret.Operations = parseFunctionBody(fnc.Body)
 	ret.Name = fnc.Name
-	fmt.Printf("  OK  %v\n", time.Since(start))
+	fmt.Printf(" OK %v\n", time.Since(start))
 	return &ret
 }
 
@@ -464,11 +464,12 @@ func realizeToken(token ExpressionToken) *Expression {
 	case TK_FUNCTION:
 		return realizeFunctionCall(token)
 	case TK_STRING:
+		str := strings.TrimPrefix(strings.TrimSuffix(token.Value, "\""), "\"")
 		return &Expression{
 			Operator: BO_CONSTANT,
 			Value: &BinaryTypedValue{
 				Type:  BT_STRING,
-				Value: strings.TrimPrefix(strings.TrimSuffix(token.Value, "\""), "\""),
+				Value: &str,
 			},
 		}
 	default:
@@ -704,7 +705,10 @@ func tokenizeExpression(expr string) []ExpressionToken {
 			}
 		}
 		// if no condition applies, just append the current char to the current segment
-		if !charIsWhitespace(string(expr[i])) {
+		if !charIsWhitespace(string(expr[i])) && !inString {
+			current += string(expr[i])
+		}
+		if inString {
 			current += string(expr[i])
 		}
 	}
@@ -969,7 +973,7 @@ func splitToLines(source string) []string {
 	return strings.Split(source, "\n")
 }
 
-var FUNC_REGEX = regexp.MustCompile(`(?msU)func ([a-zA-Z_]{1}[a-zA-Z0-9_]*)\((.*)\) (?:=> ([a-zA-Z0-9]*) )?{\n(.*)}`)
+var FUNC_REGEX = regexp.MustCompile(`(?msU)func ([a-zA-Z_]{1}[a-zA-Z0-9_]*)\((.*)\) (?:=> ([a-zA-Z0-9]*) )?{\n(.*)}\n>`)
 
 func findFunctions(source string) ([]UnparsedFunction, UnparsedFunction) {
 	funcs := []UnparsedFunction{}

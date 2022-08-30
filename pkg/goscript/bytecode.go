@@ -1,10 +1,29 @@
 package goscript
 
-import "fmt"
+import (
+	"encoding/gob"
+	"fmt"
+	"log"
+	"os"
+)
 
 type Program struct {
 	Operations      []BinaryOperation
 	SymbolTableSize int
+}
+
+func (p *Program) Encode(out string) {
+	f, err := os.OpenFile(out, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	gob.Register(BT_ANY)
+	gob.Register(Expression{})
+	enc := gob.NewEncoder(f)
+	err = enc.Encode(p)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type OperationType byte
@@ -228,10 +247,10 @@ func NewReturnValueOp(value *Expression) BinaryOperation {
 	}
 }
 
-func NewCallFunctionOp(functionExpression *Expression) BinaryOperation {
+func NewExpressionOp(expr *Expression) BinaryOperation {
 	return BinaryOperation{
 		Type: CALL,
-		Args: []any{functionExpression},
+		Args: []any{expr},
 	}
 }
 
@@ -380,6 +399,10 @@ func (e *Expression) String() string {
 		return fmt.Sprintf("CONST(%v)", e.Value.String())
 	case BO_FUNCTION_CALL:
 		return fmt.Sprintf("FUNC[%v](%v)", e.Ref, e.Args)
+	case BO_FUNCTION_CALL_PLACEHOLDER:
+		return fmt.Sprintf("FUNCTION_PH[%v](%v)", e.Ref, e.Args)
+	case BO_VSYMBOL_PLACEHOLDER:
+		return fmt.Sprintf("VSYMBOL_PH[%v](%v)", e.Ref, e.Args)
 	case BO_INDEX_INTO:
 		return fmt.Sprintf("SYM(%v)[%v]", e.Ref, e.Value.String())
 	case BO_VSYMBOL:

@@ -1,5 +1,6 @@
 application hello
 
 func main() {
-    print("hello world")
+let greeting: string = "Hello World"
+return greeting
 }

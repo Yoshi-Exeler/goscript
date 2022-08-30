@@ -19,28 +19,29 @@ var SIMPLE_STRING_REGEX = regexp.MustCompile(`(?mU)".*[^\\]"`)
 
 var MULTILINE_STRING_REGEX = regexp.MustCompile(`(?Us)\x60.*\x60`)
 
-/* generateFQSC will apply preprocessing steps to the applications source code
-   The following steps will be applied:
-	- delete import directives
-	- delete application directive
-	- delete external directives
-	- prefix all symbols with the hash of their module (a function getJWT from the package jwt would become hash_getJWT)
-	- replace external symbol references with their expected name (jwt.getJWT becomes hash_getJWT)
-		- dots can be contained in property access, member access, numbers and strings
-		- numbers shouldnt be a problem since we can just ignore them based on required property names
-		- we need to detect all strings, remember their starting and ending indices in the string and then bounds check wether or not the
-		  match we have is inside a string zone
-	- merge all source files
+/*
+	 generateFQSC will apply preprocessing steps to the applications source code
+	   The following steps will be applied:
+		- delete import directives
+		- delete application directive
+		- delete external directives
+		- prefix all symbols with the hash of their module (a function getJWT from the package jwt would become hash_getJWT)
+		- replace external symbol references with their expected name (jwt.getJWT becomes hash_getJWT)
+			- dots can be contained in property access, member access, numbers and strings
+			- numbers shouldnt be a problem since we can just ignore them based on required property names
+			- we need to detect all strings, remember their starting and ending indices in the string and then bounds check wether or not the
+			  match we have is inside a string zone
+		- merge all source files
 */
 func generateFQSC(source *ApplicationSource) (string, error) {
 	start := time.Now()
 	fmt.Println("[GSC][genFQSC] begin generation of fqsc, stripping directives and generating module blobs")
-	source.ApplicationFile.Content = stipDirectives(source.ApplicationFile.Content)
+	source.ApplicationFile.Content = stripDirectives(source.ApplicationFile.Content)
 	for _, mod := range source.Modules {
 		for _, file := range mod.Files {
 			mod.Content += file.Content
 		}
-		mod.Content = stipDirectives(mod.Content)
+		mod.Content = stripDirectives(mod.Content)
 		mod.Content = prefixSymbolNames(mod.Content, mod.Hash, mod.Name)
 		fqsc, err := fixReferences(mod.Content, mod, source.Modules)
 		if err != nil {
@@ -59,10 +60,11 @@ func generateFQSC(source *ApplicationSource) (string, error) {
 	// now we just merge all the sources and return them
 	fullFQSC := source.ApplicationFile.Content
 	for _, mod := range source.Modules {
-		fullFQSC += "\n" + mod.Content + "\n"
+		fullFQSC += "\n" + mod.Content
 	}
 	fmt.Println("[GSC][genFQSC] blobs merged into FQSC successfully")
 	fmt.Printf("[GSC][STAGE_COMPLETION] fqsc generation completed in %s\n", time.Since(start))
+	fullFQSC += "\n>"
 	// dump fqsc to a file if FQSC debugging is enabled
 	if DEBUG_DUMP_FQSC {
 		os.WriteFile("fqsc.gs", []byte(fullFQSC), 0600)
@@ -162,11 +164,11 @@ func getStringMask(source string) []bool {
 func prefixSymbolNames(source string, prefix string, name string) string {
 	// find all struct definitions
 	stepOne := STRUCT_NAME_REGEX.ReplaceAllString(source, fmt.Sprintf("struct st_%v_%v_$1 {", prefix, name))
-	stepTwo := FUNC_NAME_REGEX.ReplaceAllString(stepOne, fmt.Sprintf("func fn_%v_%v_$1(", prefix, name))
+	stepTwo := FUNC_NAME_REGEX.ReplaceAllString(stepOne, fmt.Sprintf(">\nfunc fn_%v_%v_$1(", prefix, name))
 	return stepTwo
 }
 
-func stipDirectives(source string) string {
+func stripDirectives(source string) string {
 	stepOne := IMPORT_REGEX.ReplaceAllString(source, "")
 	stepTwo := APPLICATION_REGEX.ReplaceAllString(stepOne, "")
 	stepThree := EXTERNAL_DIRECTIVE_REGEX.ReplaceAllString(stepTwo, "")

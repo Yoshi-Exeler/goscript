@@ -342,6 +342,7 @@ const (
 	BO_INDEX_INTO                BinaryOperator = 13 // indexes into an array
 	BO_FUNCTION_CALL_PLACEHOLDER BinaryOperator = 14
 	BO_VSYMBOL_PLACEHOLDER       BinaryOperator = 15
+	BO_BUILTIN_CALL              BinaryOperator = 16
 )
 
 func (b BinaryOperator) String() string {
@@ -378,6 +379,8 @@ const (
 	BF_PRINTF  BuiltinFunction = 4
 	BF_MIN     BuiltinFunction = 5
 	BF_MAX     BuiltinFunction = 6
+	BF_INPUT   BuiltinFunction = 7
+	BF_INPUTLN BuiltinFunction = 8
 )
 
 // Expression represents an expression tree.

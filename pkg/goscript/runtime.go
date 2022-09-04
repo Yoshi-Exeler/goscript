@@ -387,6 +387,9 @@ func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 	case BO_FUNCTION_CALL:
 		// if the expression is a function call, start executing the function until it eventually returns a constant
 		return r.execFunctionExpression(e)
+	case BO_BUILTIN_CALL:
+		// if the expression is a function call, start executing the function until it eventually returns a constant
+		return r.execFunctionExpression(e)
 	case BO_INDEX_INTO:
 		return r.indexIntoExpression(e)
 	default:
@@ -409,7 +412,45 @@ func (r *Runtime) indexIntoExpression(e *Expression) *BinaryTypedValue {
 	return (*symbol.Value.(*[]*BinaryTypedValue))[indirectCast[int](*index)]
 }
 
-// exec will execute the expression as a function, assuming that it has been type checked before
+// execBuiltinCall executes the expression as a builtin function, assuming that it has been type checked before
+func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
+	// convert the builtin index to a builtin index type
+	builtinIdx := BuiltinFunction(e.Ref)
+	// call the apropriate handler
+	switch builtinIdx {
+	case BF_LEN:
+		return r.builtinLen(e.Args)
+	case BF_INPUT:
+		panic("not implemented")
+	case BF_INPUTLN:
+		panic("not implemented")
+	case BF_MAX:
+		panic("not implemented")
+	case BF_MIN:
+		panic("not implemented")
+	case BF_PRINT:
+		panic("not implemented")
+	case BF_PRINTF:
+		panic("not implemented")
+	case BF_PRINTLN:
+		panic("not implemented")
+	default:
+		panic(fmt.Sprintf("unknown builtin %v, fatal error", builtinIdx))
+	}
+}
+
+// builtinLen
+func (r *Runtime) builtinLen(args []*FunctionArgument) *BinaryTypedValue {
+	// expect the number of arguments to be 1
+	expectLength(args, 1, "length builtin takes one argument")
+	// return the length of the array
+	return &BinaryTypedValue{
+		Value: len(*r.ResolveExpression(args[0].Expression).Value.(*[]*BinaryTypedValue)),
+		Type:  BT_UINT64,
+	}
+}
+
+// execFunctionExpression will execute the expression as a function, assuming that it has been type checked before
 func (r *Runtime) execFunctionExpression(e *Expression) *BinaryTypedValue {
 	// save the current pc so we can return here later
 	returnPC := r.ProgramCounter

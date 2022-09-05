@@ -431,9 +431,9 @@ func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 	case BF_PRINT:
 		return r.builtinPrint(e.Args)
 	case BF_PRINTF:
-		panic("not implemented")
+		return r.builtinPrintf(e.Args)
 	case BF_PRINTLN:
-		panic("not implemented")
+		return r.builtinPrintln(e.Args)
 	default:
 		panic(fmt.Sprintf("unknown builtin %v, fatal error", builtinIdx))
 	}
@@ -449,6 +449,38 @@ func (r *Runtime) builtinPrint(args []*FunctionArgument) *BinaryTypedValue {
 		Type:  BT_NOTYPE,
 		Value: nil,
 	}
+}
+
+func (r *Runtime) builtinPrintln(args []*FunctionArgument) *BinaryTypedValue {
+	// expect the number of arguments to be 1
+	expectLength(args, 1, "println builtin takes one argument")
+	// perform the print
+	printlnUnderlying(r.ResolveExpression(args[0].Expression).Value.(*BinaryTypedValue))
+	// yield null
+	return &BinaryTypedValue{
+		Type:  BT_NOTYPE,
+		Value: nil,
+	}
+}
+
+func (r *Runtime) builtinPrintf(args []*FunctionArgument) *BinaryTypedValue {
+	// resolve the other args
+	argSpread := r.resolveArgs(args[1:])
+	// perform the print
+	printfUnderlying(*(r.ResolveExpression(args[0].Expression).Value.(*string)), argSpread)
+	// yield null
+	return &BinaryTypedValue{
+		Type:  BT_NOTYPE,
+		Value: nil,
+	}
+}
+
+func (r *Runtime) resolveArgs(args []*FunctionArgument) []any {
+	res := []any{}
+	for _, arg := range args {
+		res = append(res, dereferenceUnderlying(r.ResolveExpression(arg.Expression)))
+	}
+	return res
 }
 
 // builtinLen runs the len builtin function

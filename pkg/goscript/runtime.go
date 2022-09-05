@@ -1,7 +1,11 @@
 package goscript
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+
+	"golang.org/x/term"
 )
 
 func NewRuntime() *Runtime {
@@ -421,9 +425,9 @@ func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 	case BF_LEN:
 		return r.builtinLen(e.Args)
 	case BF_INPUT:
-		panic("not implemented")
+		r.builtinInput(e.Args)
 	case BF_INPUTLN:
-		panic("not implemented")
+		r.builtinInputln(e.Args)
 	case BF_MAX:
 		panic("not implemented")
 	case BF_MIN:
@@ -436,6 +440,37 @@ func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 		return r.builtinPrintln(e.Args)
 	default:
 		panic(fmt.Sprintf("unknown builtin %v, fatal error", builtinIdx))
+	}
+}
+
+func (r *Runtime) builtinInput(args []*FunctionArgument) *BinaryTypedValue {
+	// switch stdin into 'raw' mode
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(fmt.Sprintf("cannt switch into raw mode, error %v", err))
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+	b := make([]byte, 1)
+	_, err = os.Stdin.Read(b)
+	if err != nil {
+		panic(fmt.Sprintf("cannt read from stdin, error %v", err))
+	}
+	val := fmt.Sprintf("%q", string(b[0]))
+	return &BinaryTypedValue{
+		Type:  BT_CHAR,
+		Value: &val,
+	}
+}
+
+func (r *Runtime) builtinInputln(args []*FunctionArgument) *BinaryTypedValue {
+	reader := bufio.NewReader(os.Stdin)
+	text, err := reader.ReadString('\n')
+	if err != nil {
+		panic(fmt.Sprintf("cannot read from stdin with error %v", err))
+	}
+	return &BinaryTypedValue{
+		Type:  BT_STRING,
+		Value: &text,
 	}
 }
 

@@ -174,6 +174,9 @@ func (r *Runtime) unlinkedAssign(target *BinaryTypedValue, value *BinaryTypedVal
 	case BT_STRING:
 		// assign the underlying value of value to the underlying value of target
 		*target.Value.(*string) = *value.Value.(*string)
+	case BT_CHAR:
+		// assign the underlying value of value to the underlying value of target
+		*target.Value.(*rune) = *value.Value.(*rune)
 	case BT_BOOLEAN:
 		// assign the underlying value of value to the underlying value of target
 		*target.Value.(*bool) = *value.Value.(*bool)
@@ -181,7 +184,7 @@ func (r *Runtime) unlinkedAssign(target *BinaryTypedValue, value *BinaryTypedVal
 		// assign the underlying value of value to the underlying value of target
 		*target.Value.(*[]*BinaryTypedValue) = *value.Value.(*[]*BinaryTypedValue)
 	default:
-		panic("unexpected type in unlink")
+		panic(fmt.Sprintf("unexpected type in unlink: %v", value.Type))
 	}
 }
 
@@ -247,6 +250,11 @@ func (r *Runtime) unlink(value *BinaryTypedValue) *BinaryTypedValue {
 		underlying := *value.Value.(*string)
 		value.Value = &underlying
 		return value
+	case BT_CHAR:
+		// cast the value's type to its underlying type
+		underlying := *value.Value.(*rune)
+		value.Value = &underlying
+		return value
 	case BT_BOOLEAN:
 		// cast the value's type to its underlying type
 		underlying := *value.Value.(*bool)
@@ -257,8 +265,10 @@ func (r *Runtime) unlink(value *BinaryTypedValue) *BinaryTypedValue {
 		underlying := *value.Value.(*[]*BinaryTypedValue)
 		value.Value = &underlying
 		return value
+	case BT_NOTYPE:
+		return value
 	default:
-		panic("unexpected type in unlink")
+		panic(fmt.Sprintf("unexpected type in unlink: %v", value.Type))
 	}
 }
 
@@ -349,6 +359,9 @@ func defaultValuePtrOf(valueType BinaryType) any {
 	case BT_STRING:
 		zero := ""
 		return &zero
+	case BT_CHAR:
+		zero := rune(0)
+		return &zero
 	case BT_ARRAY:
 		zero := []*BinaryTypedValue{}
 		return &zero
@@ -393,7 +406,7 @@ func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 		return r.execFunctionExpression(e)
 	case BO_BUILTIN_CALL:
 		// if the expression is a function call, start executing the function until it eventually returns a constant
-		return r.execFunctionExpression(e)
+		return r.execBuiltinCall(e)
 	case BO_INDEX_INTO:
 		return r.indexIntoExpression(e)
 	default:
@@ -425,9 +438,9 @@ func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 	case BF_LEN:
 		return r.builtinLen(e.Args)
 	case BF_INPUT:
-		r.builtinInput(e.Args)
+		return r.builtinInput(e.Args)
 	case BF_INPUTLN:
-		r.builtinInputln(e.Args)
+		return r.builtinInputln(e.Args)
 	case BF_MAX:
 		panic("not implemented")
 	case BF_MIN:
@@ -455,7 +468,7 @@ func (r *Runtime) builtinInput(args []*FunctionArgument) *BinaryTypedValue {
 	if err != nil {
 		panic(fmt.Sprintf("cannt read from stdin, error %v", err))
 	}
-	val := fmt.Sprintf("%q", string(b[0]))
+	val := rune(b[0])
 	return &BinaryTypedValue{
 		Type:  BT_CHAR,
 		Value: &val,
@@ -478,7 +491,7 @@ func (r *Runtime) builtinPrint(args []*FunctionArgument) *BinaryTypedValue {
 	// expect the number of arguments to be 1
 	expectLength(args, 1, "print builtin takes one argument")
 	// perform the print
-	printUnderlying(r.ResolveExpression(args[0].Expression).Value.(*BinaryTypedValue))
+	printUnderlying(r.ResolveExpression(args[0].Expression))
 	// yield null
 	return &BinaryTypedValue{
 		Type:  BT_NOTYPE,
@@ -490,7 +503,7 @@ func (r *Runtime) builtinPrintln(args []*FunctionArgument) *BinaryTypedValue {
 	// expect the number of arguments to be 1
 	expectLength(args, 1, "println builtin takes one argument")
 	// perform the print
-	printlnUnderlying(r.ResolveExpression(args[0].Expression).Value.(*BinaryTypedValue))
+	printlnUnderlying(r.ResolveExpression(args[0].Expression))
 	// yield null
 	return &BinaryTypedValue{
 		Type:  BT_NOTYPE,

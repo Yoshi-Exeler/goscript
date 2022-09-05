@@ -238,3 +238,78 @@ func TestLoopAssign(t *testing.T) {
 	}
 	fmt.Printf("%+v\n", *runtime.SymbolTable[1])
 }
+
+func TestPrintBuiltin(t *testing.T) {
+	eleven := uint8(11)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_UINT8),
+			NewAssignExpressionOp(1, NewConstantExpression(&eleven, BT_UINT8)), // assign the constant 11 to the local symbol 2
+			NewReturnValueOp(&Expression{
+				Operator: BO_BUILTIN_CALL,
+				Ref:      int(BF_PRINT),
+				Args: []*FunctionArgument{
+					&FunctionArgument{
+						Expression: NewVSymbolExpression(1),
+					},
+				},
+			}), // return the value of the symbol 2
+		},
+		SymbolTableSize: 10,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+}
+
+func TestPrintlnBuiltin(t *testing.T) {
+	eleven := uint8(12)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_UINT8),
+			NewAssignExpressionOp(1, NewConstantExpression(&eleven, BT_UINT8)), // assign the constant 11 to the local symbol 2
+			NewReturnValueOp(&Expression{
+				Operator: BO_BUILTIN_CALL,
+				Ref:      int(BF_PRINTLN),
+				Args: []*FunctionArgument{
+					&FunctionArgument{
+						Expression: NewVSymbolExpression(1),
+					},
+				},
+			}), // return the value of the symbol 2
+		},
+		SymbolTableSize: 10,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+}
+
+func TestPrintfBuiltin(t *testing.T) {
+	fstr := "%x\n"
+	number := uint8(143)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_STRING),
+			NewAssignExpressionOp(1, NewConstantExpression(&fstr, BT_STRING)), // assign the constant 11 to the local symbol 2
+			NewBindOp(2, BT_UINT8),
+			NewAssignExpressionOp(2, NewConstantExpression(&number, BT_UINT8)), // assign the constant 11 to the local symbol 2
+			NewReturnValueOp(&Expression{
+				Operator: BO_BUILTIN_CALL,
+				Ref:      int(BF_PRINTF),
+				Args: []*FunctionArgument{
+					&FunctionArgument{
+						Expression: NewVSymbolExpression(1),
+					},
+					&FunctionArgument{
+						Expression: NewVSymbolExpression(2),
+					},
+				},
+			}), // return the value of the symbol 2
+		},
+		SymbolTableSize: 10,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+}

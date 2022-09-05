@@ -429,7 +429,7 @@ func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 	case BF_MIN:
 		panic("not implemented")
 	case BF_PRINT:
-		panic("not implemented")
+		return r.builtinPrint(e.Args)
 	case BF_PRINTF:
 		panic("not implemented")
 	case BF_PRINTLN:
@@ -439,7 +439,19 @@ func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 	}
 }
 
-// builtinLen
+func (r *Runtime) builtinPrint(args []*FunctionArgument) *BinaryTypedValue {
+	// expect the number of arguments to be 1
+	expectLength(args, 1, "print builtin takes one argument")
+	// perform the print
+	printUnderlying(r.ResolveExpression(args[0].Expression).Value.(*BinaryTypedValue))
+	// yield null
+	return &BinaryTypedValue{
+		Type:  BT_NOTYPE,
+		Value: nil,
+	}
+}
+
+// builtinLen runs the len builtin function
 func (r *Runtime) builtinLen(args []*FunctionArgument) *BinaryTypedValue {
 	// expect the number of arguments to be 1
 	expectLength(args, 1, "length builtin takes one argument")

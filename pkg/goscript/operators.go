@@ -373,6 +373,39 @@ func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator, 
 	}
 }
 
+func printUnderlying(value *BinaryTypedValue) {
+	switch value.Type {
+	case BT_INT8:
+		fmt.Print(value.Value.(*int8))
+	case BT_INT16:
+		fmt.Print(value.Value.(*int16))
+	case BT_INT32:
+		fmt.Print(value.Value.(*int32))
+	case BT_INT64:
+		fmt.Print(value.Value.(*int64))
+	case BT_UINT8:
+		fmt.Print(value.Value.(*uint8))
+	case BT_UINT16:
+		fmt.Print(value.Value.(*uint16))
+	case BT_UINT32:
+		fmt.Print(value.Value.(*uint32))
+	case BT_UINT64:
+		fmt.Print(value.Value.(*uint64))
+	case BT_BYTE:
+		fmt.Print(value.Value.(*byte))
+	case BT_FLOAT32:
+		fmt.Print(value.Value.(*float32))
+	case BT_FLOAT64:
+		fmt.Print(value.Value.(*float64))
+	case BT_CHAR:
+		fmt.Print(value.Value.(*rune))
+	case BT_STRING:
+		fmt.Print(value.Value.(*string))
+	default:
+		panic("invalid type for print underlying")
+	}
+}
+
 func genericEquals[T comparable](l any, r any) bool {
 	return *l.(*T) == *r.(*T)
 }

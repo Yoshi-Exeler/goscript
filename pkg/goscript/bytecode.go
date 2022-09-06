@@ -35,6 +35,9 @@ func (p *Program) EncodeBSON(out string) {
 		log.Fatal(err)
 	}
 	err = os.WriteFile(out, buff, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 type OperationType byte

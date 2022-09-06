@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-
-	"golang.org/x/term"
 )
 
 func NewRuntime() *Runtime {
@@ -643,17 +641,9 @@ func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 
 func (r *Runtime) builtinInput(args []*FunctionArgument) *BinaryTypedValue {
 	// switch stdin into 'raw' mode
-	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
-	if err != nil {
-		panic(fmt.Sprintf("cannt switch into raw mode, error %v", err))
-	}
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
-	b := make([]byte, 1)
-	_, err = os.Stdin.Read(b)
-	if err != nil {
-		panic(fmt.Sprintf("cannt read from stdin, error %v", err))
-	}
-	val := rune(b[0])
+	buff := make([]byte, 1)
+	os.Stdin.Read(buff)
+	val := rune(buff[0])
 	return &BinaryTypedValue{
 		Type:  BT_CHAR,
 		Value: &val,

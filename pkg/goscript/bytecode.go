@@ -19,6 +19,7 @@ func (p *Program) Encode(out string) {
 	}
 	gob.Register(BT_ANY)
 	gob.Register(Expression{})
+	gob.Register(BinaryTypedValue{})
 	enc := gob.NewEncoder(f)
 	err = enc.Encode(p)
 	if err != nil {

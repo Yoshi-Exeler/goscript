@@ -373,14 +373,27 @@ func (b BinaryOperator) String() string {
 type BuiltinFunction byte
 
 const (
-	BF_LEN     BuiltinFunction = 1
-	BF_PRINT   BuiltinFunction = 2
-	BF_PRINTLN BuiltinFunction = 3
-	BF_PRINTF  BuiltinFunction = 4
-	BF_MIN     BuiltinFunction = 5
-	BF_MAX     BuiltinFunction = 6
-	BF_INPUT   BuiltinFunction = 7
-	BF_INPUTLN BuiltinFunction = 8
+	BF_LEN       BuiltinFunction = 1
+	BF_PRINT     BuiltinFunction = 2
+	BF_PRINTLN   BuiltinFunction = 3
+	BF_PRINTF    BuiltinFunction = 4
+	BF_MIN       BuiltinFunction = 5
+	BF_MAX       BuiltinFunction = 6
+	BF_INPUT     BuiltinFunction = 7
+	BF_INPUTLN   BuiltinFunction = 8
+	BF_TOUINT8   BuiltinFunction = 9
+	BF_TOUINT16  BuiltinFunction = 10
+	BF_TOUINT32  BuiltinFunction = 11
+	BF_TOUINT64  BuiltinFunction = 12
+	BF_TOINT8    BuiltinFunction = 13
+	BF_TOINT16   BuiltinFunction = 14
+	BF_TOINT32   BuiltinFunction = 15
+	BF_TOINT64   BuiltinFunction = 16
+	BF_TOFLOAT32 BuiltinFunction = 17
+	BF_TOFLOAT64 BuiltinFunction = 18
+	BF_TOSTRING  BuiltinFunction = 19
+	BF_TOCHAR    BuiltinFunction = 20
+	BF_TOBYTE    BuiltinFunction = 21
 )
 
 // Expression represents an expression tree.

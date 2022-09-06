@@ -80,7 +80,6 @@ func resolveUntilCompletion(module *ModuleSource, vendorIndex map[string]*Module
 func getImportsFromSourceText(source string) ([]*ImportDirective, error) {
 	ret := []*ImportDirective{}
 	matches := IMPORT_REGEX.FindAllStringSubmatch(source, -1)
-	fmt.Println(matches)
 	for _, match := range matches {
 		if len(match) != 2 {
 			return nil, fmt.Errorf("invalid match for direct import statement")
@@ -107,7 +106,6 @@ func getImportsFromSourceText(source string) ([]*ImportDirective, error) {
 		})
 	}
 	aliasMatches := IMPORT_ALIAS_REGEX.FindAllStringSubmatch(source, -1)
-	fmt.Println(aliasMatches, source)
 	for _, match := range aliasMatches {
 		if len(match) != 2 {
 			return nil, fmt.Errorf("invalid match for import statement")

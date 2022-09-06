@@ -527,7 +527,7 @@ func genericIndirectCast[T Numeric, RT Numeric](value any) RT {
 	return RT(*value.(*T))
 }
 
-func indirectCast[RT Numeric](value BinaryTypedValue) RT {
+func indirectCast[RT Numeric](value *BinaryTypedValue) RT {
 	switch value.Type {
 	case BT_INT8:
 		return genericIndirectCast[int8, RT](value.Value)

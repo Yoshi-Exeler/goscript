@@ -389,7 +389,7 @@ func (r *Runtime) execIndexAssign(operation *BinaryOperation) {
 	// get the expression from arg2
 	expression := operation.Args[2].(*Expression)
 	// resolve the expression and  assign the resolution to the referenced symbol, without linking it to the expression
-	r.unlinkedAssign((*r.SymbolTable[symbolRef].Value.(*[]*BinaryTypedValue))[indirectCast[int](*index)], r.ResolveExpression(expression))
+	r.unlinkedAssign((*r.SymbolTable[symbolRef].Value.(*[]*BinaryTypedValue))[indirectCast[int](index)], r.ResolveExpression(expression))
 }
 
 // ResolveExpression will recursively resolve the expression to a typed value.
@@ -426,7 +426,118 @@ func (r *Runtime) indexIntoExpression(e *Expression) *BinaryTypedValue {
 	// resolve the index expression
 	index := r.ResolveExpression(e.Value.Value.(*Expression))
 	// index into the symbol
-	return (*symbol.Value.(*[]*BinaryTypedValue))[indirectCast[int](*index)]
+	return (*symbol.Value.(*[]*BinaryTypedValue))[indirectCast[int](index)]
+}
+
+/*
+	BF_TOUINT8   BuiltinFunction = 9
+	BF_TOUINT16  BuiltinFunction = 10
+	BF_TOUINT32  BuiltinFunction = 11
+	BF_TOUINT64  BuiltinFunction = 12
+	BF_TOINT8    BuiltinFunction = 13
+	BF_TOINT16   BuiltinFunction = 14
+	BF_TOINT32   BuiltinFunction = 15
+	BF_TOINT64   BuiltinFunction = 16
+	BF_TOFLOAT32 BuiltinFunction = 17
+	BF_TOFLOAT64 BuiltinFunction = 18
+	BF_TOSTRING  BuiltinFunction = 19
+	BF_TOCHAR    BuiltinFunction = 20
+	BF_TOBYTE    BuiltinFunction = 21
+*/
+
+func (r *Runtime) builtinToUint8(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_UINT8,
+		Value: indirectCast[uint8](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinToUint16(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_UINT16,
+		Value: indirectCast[uint16](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinToUint32(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_UINT32,
+		Value: indirectCast[uint32](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinToUint64(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_UINT64,
+		Value: indirectCast[uint64](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinToint8(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_INT8,
+		Value: indirectCast[int8](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinToint16(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_INT16,
+		Value: indirectCast[int16](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinToint32(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_INT32,
+		Value: indirectCast[int32](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinToint64(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_INT64,
+		Value: indirectCast[int64](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinTofloat32(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_FLOAT32,
+		Value: indirectCast[float32](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinTofloat64(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	return &BinaryTypedValue{
+		Type:  BT_FLOAT64,
+		Value: indirectCast[float64](r.ResolveExpression(e)),
+	}
+}
+
+func (r *Runtime) builtinToByte(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	panic("builtinToByte not imoplemented")
+}
+
+func (r *Runtime) builtinToString(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	panic("builtinToString not imoplemented")
+}
+
+func (r *Runtime) builtinToChar(e *Expression) *BinaryTypedValue {
+	// resolve the expression to a value and cast to uint8
+	panic("builtinToChar not imoplemented")
 }
 
 // execBuiltinCall executes the expression as a builtin function, assuming that it has been type checked before
@@ -451,6 +562,32 @@ func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 		return r.builtinPrintf(e.Args)
 	case BF_PRINTLN:
 		return r.builtinPrintln(e.Args)
+	case BF_TOUINT8:
+		return r.builtinToUint8(e)
+	case BF_TOUINT16:
+		return r.builtinToUint16(e)
+	case BF_TOUINT32:
+		return r.builtinToUint32(e)
+	case BF_TOUINT64:
+		return r.builtinToUint64(e)
+	case BF_TOINT8:
+		return r.builtinToint8(e)
+	case BF_TOINT16:
+		return r.builtinToint16(e)
+	case BF_TOINT32:
+		return r.builtinToint32(e)
+	case BF_TOINT64:
+		return r.builtinToint64(e)
+	case BF_TOFLOAT32:
+		return r.builtinTofloat32(e)
+	case BF_TOFLOAT64:
+		return r.builtinTofloat64(e)
+	case BF_TOBYTE:
+		return r.builtinToByte(e)
+	case BF_TOSTRING:
+		return r.builtinToString(e)
+	case BF_TOCHAR:
+		return r.builtinToChar(e)
 	default:
 		panic(fmt.Sprintf("unknown builtin %v, fatal error", builtinIdx))
 	}

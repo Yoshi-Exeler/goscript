@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Program struct {
@@ -25,6 +27,15 @@ func (p *Program) Encode(out string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (p *Program) EncodeBSON(out string) {
+	f, err := os.OpenFile(out, os.O_RDWR|os.O_CREATE, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	buff, err := bson.Marshal(p)
+	err = os.WriteFile(out, buff, 0644)
 }
 
 type OperationType byte

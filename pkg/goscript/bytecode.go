@@ -182,8 +182,8 @@ func (bv *BinaryTypedValue) String() string {
 }
 
 type BinaryOperation struct {
-	Type OperationType // which operation should be performed
-	Args []any         // the arguments passed to the operation
+	Type OperationType `json:",omitempty" bson:",omitempty"` // which operation should be performed
+	Args []any         `json:",omitempty" bson:",omitempty"` // the arguments passed to the operation
 }
 
 func NewAssignExpressionOp(symbolRef int, expression *Expression) BinaryOperation {
@@ -336,8 +336,8 @@ func (b BinaryType) String() string {
 }
 
 type BinarySymbol struct {
-	Name  string
-	Value *BinaryTypedValue
+	Name  string            `json:",omitempty" bson:",omitempty"`
+	Value *BinaryTypedValue `json:",omitempty" bson:",omitempty"`
 }
 
 type BinaryOperator byte
@@ -511,13 +511,13 @@ func NewIndexIntoExpression(symbol int, index *Expression) *Expression {
 }
 
 type FunctionArgument struct {
-	Expression *Expression
-	SymbolRef  int
+	Expression *Expression `json:",omitempty" bson:",omitempty"`
+	SymbolRef  int         `json:",omitempty" bson:",omitempty"`
 }
 
 type BinaryTypedValue struct {
-	Type  BinaryType
-	Value any
+	Type  BinaryType `json:",omitempty" bson:",omitempty"`
+	Value any        `json:",omitempty" bson:",omitempty"`
 }
 
 type Numeric interface {

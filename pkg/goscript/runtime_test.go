@@ -342,3 +342,61 @@ func TestNumericTypecastU64ToI64(t *testing.T) {
 	fmt.Printf(runtime.SymbolTable[2].String())
 	_ = runtime.SymbolTable[2].Value.(*int64)
 }
+
+func TestNumericToStringTypecast(t *testing.T) {
+	number := uint64(143)
+	str := ""
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_UINT64),
+			NewAssignExpressionOp(1, NewConstantExpression(&number, BT_UINT64)),
+			NewBindOp(2, BT_STRING),
+			NewAssignExpressionOp(2, NewConstantExpression(&str, BT_STRING)),
+			NewAssignExpressionOp(2, &Expression{
+				Operator: BO_BUILTIN_CALL,
+				Ref:      int(BF_TOSTRING),
+				Args: []*FunctionArgument{
+					&FunctionArgument{
+						Expression: NewVSymbolExpression(1),
+					},
+				},
+			}),
+			NewReturnValueOp(NewVSymbolExpression(2)),
+		},
+		SymbolTableSize: 10,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+	fmt.Printf(runtime.SymbolTable[2].String())
+	_ = runtime.SymbolTable[2].Value.(*string)
+}
+
+func TestNumericToCharTypecast(t *testing.T) {
+	number := uint64(97)
+	str := rune(0)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_UINT64),
+			NewAssignExpressionOp(1, NewConstantExpression(&number, BT_UINT64)),
+			NewBindOp(2, BT_CHAR),
+			NewAssignExpressionOp(2, NewConstantExpression(&str, BT_CHAR)),
+			NewAssignExpressionOp(2, &Expression{
+				Operator: BO_BUILTIN_CALL,
+				Ref:      int(BF_TOCHAR),
+				Args: []*FunctionArgument{
+					&FunctionArgument{
+						Expression: NewVSymbolExpression(1),
+					},
+				},
+			}),
+			NewReturnValueOp(NewVSymbolExpression(2)),
+		},
+		SymbolTableSize: 10,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+	fmt.Printf(runtime.SymbolTable[2].String())
+	_ = runtime.SymbolTable[2].Value.(*rune)
+}

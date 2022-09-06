@@ -154,6 +154,8 @@ func (bv *BinaryTypedValue) String() string {
 		return fmt.Sprint(*bv.Value.(*string))
 	case BT_BOOLEAN:
 		return fmt.Sprint(*bv.Value.(*bool))
+	case BT_CHAR:
+		return fmt.Sprintf("%q", *bv.Value.(*rune))
 	case BT_ARRAY:
 		return "[...]"
 	case BT_EXPRESSION:

@@ -71,8 +71,8 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 			r.execAssign(operation)
 		case INDEX_ASSIGN:
 			r.execIndexAssign(operation)
-		case CALL:
-			r.execFunctionExpression(operation.Args[0].(*Expression))
+		case EXPRESSION:
+			r.ResolveExpression(operation.Args[0].(*Expression))
 		case BIND:
 			r.execBind(operation)
 		case RETURN:

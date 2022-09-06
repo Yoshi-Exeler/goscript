@@ -33,7 +33,7 @@ const (
 	INDEX_ASSIGN OperationType = 2  // assign an expression resolution to a an index of an array symbol
 	BIND         OperationType = 3  // binds a symbol to the current scope
 	RETURN       OperationType = 4  // return a value
-	CALL         OperationType = 5  // call a function without assigning its return value to anything
+	EXPRESSION   OperationType = 5  // call a function without assigning its return value to anything
 	ENTER_SCOPE  OperationType = 6  // enters a a new scope
 	EXIT_SCOPE   OperationType = 7  // exits the current scope
 	JUMP         OperationType = 8  // jumps to the address in arg0
@@ -104,8 +104,8 @@ func (b *BinaryOperation) String() string {
 		return fmt.Sprintf("BIND SYM(%v) %v", b.Args[0], b.Args[1].(BinaryType).String())
 	case RETURN:
 		return fmt.Sprintf("RETURN %v", b.Args[0].(*Expression))
-	case CALL:
-		return fmt.Sprintf("CALL %v", b.Args[0].(*Expression))
+	case EXPRESSION:
+		return fmt.Sprintf("EXPRESSION %v", b.Args[0].(*Expression))
 	case ENTER_SCOPE:
 		return "ENTER_SCOPE"
 	case EXIT_SCOPE:
@@ -251,7 +251,7 @@ func NewReturnValueOp(value *Expression) BinaryOperation {
 
 func NewExpressionOp(expr *Expression) BinaryOperation {
 	return BinaryOperation{
-		Type: CALL,
+		Type: EXPRESSION,
 		Args: []any{expr},
 	}
 }

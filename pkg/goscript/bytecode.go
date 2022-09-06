@@ -417,12 +417,12 @@ const (
 // opertor is BO_CONSTANT. In this case value is non nil and holds the constant value of the expression.
 // If the expression is a function, the value will hold the function reference.
 type Expression struct {
-	LeftExpression  *Expression         `json: omitempty; bson: omitempty`
-	RightExpression *Expression         `json: omitempty; bson: omitempty`
-	Operator        BinaryOperator      `json: omitempty; bson: omitempty`
-	Value           *BinaryTypedValue   `json: omitempty; bson: omitempty`
-	Ref             int                 `json: omitempty; bson: omitempty`
-	Args            []*FunctionArgument `json: omitempty; bson: omitempty`
+	LeftExpression  *Expression         `json:",omitempty" bson:",omitempty"`
+	RightExpression *Expression         `json:",omitempty" bson:",omitempty"`
+	Operator        BinaryOperator      `json:",omitempty" bson:",omitempty"`
+	Value           *BinaryTypedValue   `json:",omitempty" bson:",omitempty"`
+	Ref             int                 `json:",omitempty" bson:",omitempty"`
+	Args            []*FunctionArgument `json:",omitempty" bson:",omitempty"`
 }
 
 func (e *Expression) String() string {

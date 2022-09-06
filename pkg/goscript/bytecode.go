@@ -471,11 +471,11 @@ func NewConstantExpression(value any, valueType BinaryType) *Expression {
 	}
 }
 
-func NewArrayExpression(elements []*BinaryTypedValue, valueType BinaryType) *Expression {
+func NewArrayExpression(elements []*BinaryTypedValue) *Expression {
 	return &Expression{
 		Value: &BinaryTypedValue{
 			Value: &elements,
-			Type:  valueType,
+			Type:  BT_ARRAY,
 		},
 		Operator:        BO_CONSTANT,
 		LeftExpression:  nil,

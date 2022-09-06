@@ -37,7 +37,7 @@ func TestAssignArrayConstant(t *testing.T) {
 			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
 				Type:  BT_UINT8,
 				Value: &eleven,
-			}}, BT_ARRAY)),
+			}})),
 			NewReturnValueOp(NewVSymbolExpression(1))},
 		SymbolTableSize: 2,
 	}
@@ -60,7 +60,7 @@ func TestArrayIndexInto(t *testing.T) {
 			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
 				Type:  BT_UINT8,
 				Value: &eleven,
-			}}, BT_ARRAY)),
+			}})),
 			NewBindOp(2, BT_UINT8),
 			NewAssignExpressionOp(2, NewIndexIntoExpression(1, NewConstantExpression(&zero, BT_INT64))),
 			NewReturnValueOp(NewVSymbolExpression(2))},
@@ -84,7 +84,7 @@ func TestArrayGrow(t *testing.T) {
 			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
 				Type:  BT_UINT8,
 				Value: &eleven,
-			}}, BT_ARRAY)),
+			}})),
 			NewGrowOperation(1, 10, BT_UINT8),
 			NewReturnValueOp(NewVSymbolExpression(1))},
 		SymbolTableSize: 4,
@@ -107,7 +107,7 @@ func TestArrayShrink(t *testing.T) {
 			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
 				Type:  BT_UINT8,
 				Value: &eleven,
-			}, &BinaryTypedValue{}}, BT_ARRAY)),
+			}, &BinaryTypedValue{}})),
 			NewShrinkOperation(1, 1),
 			NewReturnValueOp(NewVSymbolExpression(1))},
 		SymbolTableSize: 4,
@@ -387,6 +387,34 @@ func TestNumericToCharTypecast(t *testing.T) {
 				Args: []*FunctionArgument{
 					&FunctionArgument{
 						Expression: NewVSymbolExpression(1),
+					},
+				},
+			}),
+			NewReturnValueOp(NewVSymbolExpression(2)),
+		},
+		SymbolTableSize: 10,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+	fmt.Printf(runtime.SymbolTable[2].String())
+	_ = runtime.SymbolTable[2].Value.(*rune)
+}
+
+func TestIndexIntoAndCast(t *testing.T) {
+	index := uint64(2)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_ARRAY),
+			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{})),
+			NewGrowOperation(1, 10, BT_UINT8),
+			NewBindOp(2, BT_CHAR),
+			NewAssignExpressionOp(2, &Expression{
+				Operator: BO_BUILTIN_CALL,
+				Ref:      int(BF_TOCHAR),
+				Args: []*FunctionArgument{
+					&FunctionArgument{
+						Expression: NewIndexIntoExpression(1, NewConstantExpression(&index, BT_UINT64)),
 					},
 				},
 			}),

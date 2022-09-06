@@ -584,6 +584,8 @@ func indirectCast[RT Numeric](value *BinaryTypedValue) RT {
 		return genericIndirectCast[float32, RT](value.Value)
 	case BT_FLOAT64:
 		return genericIndirectCast[float64, RT](value.Value)
+	case BT_CHAR:
+		return genericIndirectCast[rune, RT](value.Value)
 	default:
 		panic(fmt.Sprintf("unknown type %v in indirect cast", value.Type))
 	}

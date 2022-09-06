@@ -30,11 +30,10 @@ func (p *Program) Encode(out string) {
 }
 
 func (p *Program) EncodeBSON(out string) {
-	f, err := os.OpenFile(out, os.O_RDWR|os.O_CREATE, 0644)
+	buff, err := bson.Marshal(p)
 	if err != nil {
 		log.Fatal(err)
 	}
-	buff, err := bson.Marshal(p)
 	err = os.WriteFile(out, buff, 0644)
 }
 

@@ -559,21 +559,33 @@ func (r *Runtime) builtinToByte(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToByte takes one argument")
 	// resolve the expression to a value and cast to uint8
-	panic("builtinToByte not imoplemented")
+	conv := indirectCast[byte](r.ResolveExpression(args[0].Expression))
+	return &BinaryTypedValue{
+		Type:  BT_BYTE,
+		Value: &conv,
+	}
 }
 
 func (r *Runtime) builtinToString(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToString takes one argument")
 	// resolve the expression to a value and cast to uint8
-	panic("builtinToString not imoplemented")
+	conv := sprintUnderlying(r.ResolveExpression(args[0].Expression))
+	return &BinaryTypedValue{
+		Type:  BT_STRING,
+		Value: &conv,
+	}
 }
 
 func (r *Runtime) builtinToChar(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToChar takes one argument")
 	// resolve the expression to a value and cast to uint8
-	panic("builtinToChar not imoplemented")
+	conv := indirectCast[rune](r.ResolveExpression(args[0].Expression))
+	return &BinaryTypedValue{
+		Type:  BT_CHAR,
+		Value: &conv,
+	}
 }
 
 // execBuiltinCall executes the expression as a builtin function, assuming that it has been type checked before

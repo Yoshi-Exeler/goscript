@@ -406,6 +406,39 @@ func printUnderlying(value *BinaryTypedValue) {
 	}
 }
 
+func sprintUnderlying(value *BinaryTypedValue) string {
+	switch value.Type {
+	case BT_INT8:
+		return fmt.Sprint(*value.Value.(*int8))
+	case BT_INT16:
+		return fmt.Sprint(*value.Value.(*int16))
+	case BT_INT32:
+		return fmt.Sprint(*value.Value.(*int32))
+	case BT_INT64:
+		return fmt.Sprint(*value.Value.(*int64))
+	case BT_UINT8:
+		return fmt.Sprint(*value.Value.(*uint8))
+	case BT_UINT16:
+		return fmt.Sprint(*value.Value.(*uint16))
+	case BT_UINT32:
+		return fmt.Sprint(*value.Value.(*uint32))
+	case BT_UINT64:
+		return fmt.Sprint(*value.Value.(*uint64))
+	case BT_BYTE:
+		return fmt.Sprint(*value.Value.(*byte))
+	case BT_FLOAT32:
+		return fmt.Sprint(*value.Value.(*float32))
+	case BT_FLOAT64:
+		return fmt.Sprint(*value.Value.(*float64))
+	case BT_CHAR:
+		return fmt.Sprint(fmt.Sprintf("%c", *value.Value.(*rune)))
+	case BT_STRING:
+		return fmt.Sprint(*value.Value.(*string))
+	default:
+		panic("invalid type for print underlying")
+	}
+}
+
 func printlnUnderlying(value *BinaryTypedValue) {
 	switch value.Type {
 	case BT_INT8:

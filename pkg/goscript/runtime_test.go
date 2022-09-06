@@ -340,4 +340,5 @@ func TestNumericTypecastU64ToI64(t *testing.T) {
 	runtime := NewRuntime()
 	runtime.Exec(testProgram)
 	fmt.Printf(runtime.SymbolTable[2].String())
+	_ = runtime.SymbolTable[2].Value.(*int64)
 }

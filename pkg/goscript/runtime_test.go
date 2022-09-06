@@ -313,3 +313,31 @@ func TestPrintfBuiltin(t *testing.T) {
 	runtime := NewRuntime()
 	runtime.Exec(testProgram)
 }
+
+func TestNumericTypecastU64ToI64(t *testing.T) {
+	number := uint64(143)
+	zero := int64(0)
+	testProgram := Program{
+		Operations: []BinaryOperation{
+			NewBindOp(1, BT_UINT64),
+			NewAssignExpressionOp(1, NewConstantExpression(&number, BT_UINT64)),
+			NewBindOp(2, BT_INT64),
+			NewAssignExpressionOp(2, NewConstantExpression(&zero, BT_INT64)),
+			NewAssignExpressionOp(2, &Expression{
+				Operator: BO_BUILTIN_CALL,
+				Ref:      int(BF_TOINT64),
+				Args: []*FunctionArgument{
+					&FunctionArgument{
+						Expression: NewVSymbolExpression(1),
+					},
+				},
+			}),
+			NewReturnValueOp(NewVSymbolExpression(2)),
+		},
+		SymbolTableSize: 10,
+	}
+	fmt.Println(testProgram.String())
+	runtime := NewRuntime()
+	runtime.Exec(testProgram)
+	fmt.Printf(runtime.SymbolTable[2].String())
+}

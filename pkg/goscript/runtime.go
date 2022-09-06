@@ -449,9 +449,10 @@ func (r *Runtime) builtinToUint8(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToUint8 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[uint8](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_UINT8,
-		Value: indirectCast[uint8](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 
@@ -459,9 +460,10 @@ func (r *Runtime) builtinToUint16(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToUint16 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[uint16](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_UINT16,
-		Value: indirectCast[uint16](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 
@@ -469,9 +471,10 @@ func (r *Runtime) builtinToUint32(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToUint32 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[uint32](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_UINT32,
-		Value: indirectCast[uint32](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 
@@ -479,9 +482,10 @@ func (r *Runtime) builtinToUint64(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToUint64 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[uint64](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_UINT64,
-		Value: indirectCast[uint64](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 
@@ -489,9 +493,10 @@ func (r *Runtime) builtinToint8(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToInt8 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[int8](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_INT8,
-		Value: indirectCast[int8](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 
@@ -499,9 +504,10 @@ func (r *Runtime) builtinToint16(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToInt16 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[int16](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_INT16,
-		Value: indirectCast[int16](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 
@@ -509,9 +515,10 @@ func (r *Runtime) builtinToint32(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToInt32 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[int32](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_INT32,
-		Value: indirectCast[int32](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 
@@ -519,9 +526,10 @@ func (r *Runtime) builtinToint64(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToInt64 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[int64](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_INT64,
-		Value: indirectCast[int64](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 
@@ -529,9 +537,10 @@ func (r *Runtime) builtinTofloat32(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToFloat32 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[float32](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_FLOAT32,
-		Value: indirectCast[float32](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 
@@ -539,9 +548,10 @@ func (r *Runtime) builtinTofloat64(args []*FunctionArgument) *BinaryTypedValue {
 	// expect one argument
 	expectLength(args, 1, "builtinToFloat64 takes one argument")
 	// resolve the expression to a value and cast to uint8
+	conv := indirectCast[float64](r.ResolveExpression(args[0].Expression))
 	return &BinaryTypedValue{
 		Type:  BT_FLOAT64,
-		Value: indirectCast[float64](r.ResolveExpression(args[0].Expression)),
+		Value: &conv,
 	}
 }
 

@@ -57,6 +57,22 @@ func encodeAny(arg any) *anypb.Any {
 		return encodeU64Container(uint64(*val))
 	case *int64:
 		return encodeU64Container(uint64(*val))
+	case *[]*BinaryTypedValue:
+		arr := &encoding.ArrayContainer{}
+		for _, elem := range *val {
+			arr.Values = append(arr.Values, &encoding.BinaryTypedValue{
+				Type:  uint32(elem.Type),
+				Value: encodeAny(elem.Value),
+			})
+		}
+		buff, err := proto.Marshal(arr)
+		if err != nil {
+			panic("failed to encode array to proto buffer array")
+		}
+		return &anypb.Any{
+			TypeUrl: "goscript/u64container",
+			Value:   buff,
+		}
 	case nil:
 		return &anypb.Any{}
 	case int:

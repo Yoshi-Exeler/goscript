@@ -49,3 +49,7 @@ message StringContainer {
 message F64Container {
     double Value = 1;
 }
+
+message ArrayContainer {
+    repeated BinaryTypedValue Values = 1;
+}

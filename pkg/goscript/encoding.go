@@ -70,7 +70,19 @@ func encodeAny(arg any) *anypb.Any {
 			panic("failed to encode array to proto buffer array")
 		}
 		return &anypb.Any{
-			TypeUrl: "goscript/u64container",
+			TypeUrl: "goscript/array",
+			Value:   buff,
+		}
+	case *FunctionArgument:
+		buff, err := proto.Marshal(&encoding.FunctionArgument{
+			Expression: encodeExpr(val.Expression),
+			SymbolRef:  uint64(val.SymbolRef),
+		})
+		if err != nil {
+			panic("failed to encode function arg to proto buffer function arg")
+		}
+		return &anypb.Any{
+			TypeUrl: "goscript/funcarg",
 			Value:   buff,
 		}
 	case nil:

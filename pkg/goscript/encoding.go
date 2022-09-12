@@ -36,8 +36,7 @@ func encodeAny(arg any) *anypb.Any {
 			panic("failed to encode expressiont to proto buffer expression")
 		}
 		return &anypb.Any{
-			TypeUrl: "goscript/expression",
-			Value:   buff,
+			Value: buff,
 		}
 	case BinaryType:
 		return encodeU64Container(uint64(val))
@@ -70,8 +69,7 @@ func encodeAny(arg any) *anypb.Any {
 			panic("failed to encode array to proto buffer array")
 		}
 		return &anypb.Any{
-			TypeUrl: "goscript/array",
-			Value:   buff,
+			Value: buff,
 		}
 	case *FunctionArgument:
 		buff, err := proto.Marshal(&encoding.FunctionArgument{
@@ -82,8 +80,7 @@ func encodeAny(arg any) *anypb.Any {
 			panic("failed to encode function arg to proto buffer function arg")
 		}
 		return &anypb.Any{
-			TypeUrl: "goscript/funcarg",
-			Value:   buff,
+			Value: buff,
 		}
 	case nil:
 		return &anypb.Any{}
@@ -97,8 +94,7 @@ func encodeAny(arg any) *anypb.Any {
 			panic("failed to encode string to proto buffer string")
 		}
 		return &anypb.Any{
-			TypeUrl: "goscript/u32container",
-			Value:   buff,
+			Value: buff,
 		}
 	default:
 		panic(fmt.Sprintf("unknown type %#v in encode arg", arg))
@@ -113,8 +109,7 @@ func encodeU64Container(u uint64) *anypb.Any {
 		panic("failed to encode int to proto buffer uint32")
 	}
 	return &anypb.Any{
-		TypeUrl: "goscript/u64container",
-		Value:   buff,
+		Value: buff,
 	}
 }
 

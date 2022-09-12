@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package encoding;
+
+import "google/protobuf/any.proto";
+
+option go_package = "goscript/pkg/encoding";
+
+// this option only has an effect on some targets (C++ etc)
+option optimize_for = SPEED;
+
+message Expression {
+    Expression Left = 1;
+    Expression Right = 2;
+    BinaryTypedValue Value = 3;
+    uint64 Ref = 4;
+    uint32 Operator = 5;
+    repeated google.protobuf.Any Args = 6;
+}
+
+message BinaryTypedValue {
+    uint32 Type = 1;
+    google.protobuf.Any Value = 2;
+}
+
+message BinaryOperation {
+    uint32 Type = 1;
+    repeated google.protobuf.Any Args = 2;
+}
+
+message Program {
+    uint64 SymbolTableSize = 1;
+    repeated BinaryOperation Operations = 2;
+}
+
+message FunctionArgument {
+    Expression Expression = 1;
+    uint64 SymbolRef = 2;
+}

@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"path/filepath"
+	"os"
 
 	"github.com/Yoshi-Exeler/goscript/pkg/goscript"
 )
@@ -34,6 +34,14 @@ func main() {
 
 	fmt.Println(prog.String())
 
-	prog.Encode(filepath.Base(*file) + ".gob")
+	pb, err := goscript.EncodeProgram(prog)
+	if err != nil {
+		panic(err)
+	}
+
+	err = os.WriteFile("out.pb", pb, 0644)
+	if err != nil {
+		panic(err)
+	}
 
 }

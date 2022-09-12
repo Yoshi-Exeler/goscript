@@ -328,6 +328,147 @@ func (x *FunctionArgument) GetSymbolRef() uint64 {
 	return 0
 }
 
+type U64Container struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Value uint64 `protobuf:"varint,1,opt,name=Value,proto3" json:"Value,omitempty"`
+}
+
+func (x *U64Container) Reset() {
+	*x = U64Container{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_goscript_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *U64Container) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*U64Container) ProtoMessage() {}
+
+func (x *U64Container) ProtoReflect() protoreflect.Message {
+	mi := &file_goscript_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use U64Container.ProtoReflect.Descriptor instead.
+func (*U64Container) Descriptor() ([]byte, []int) {
+	return file_goscript_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *U64Container) GetValue() uint64 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
+type StringContainer struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Value string `protobuf:"bytes,1,opt,name=Value,proto3" json:"Value,omitempty"`
+}
+
+func (x *StringContainer) Reset() {
+	*x = StringContainer{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_goscript_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StringContainer) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StringContainer) ProtoMessage() {}
+
+func (x *StringContainer) ProtoReflect() protoreflect.Message {
+	mi := &file_goscript_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StringContainer.ProtoReflect.Descriptor instead.
+func (*StringContainer) Descriptor() ([]byte, []int) {
+	return file_goscript_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *StringContainer) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
+type F64Container struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Value float64 `protobuf:"fixed64,1,opt,name=Value,proto3" json:"Value,omitempty"`
+}
+
+func (x *F64Container) Reset() {
+	*x = F64Container{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_goscript_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *F64Container) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*F64Container) ProtoMessage() {}
+
+func (x *F64Container) ProtoReflect() protoreflect.Message {
+	mi := &file_goscript_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use F64Container.ProtoReflect.Descriptor instead.
+func (*F64Container) Descriptor() ([]byte, []int) {
+	return file_goscript_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *F64Container) GetValue() float64 {
+	if x != nil {
+		return x.Value
+	}
+	return 0
+}
+
 var File_goscript_proto protoreflect.FileDescriptor
 
 var file_goscript_proto_rawDesc = []byte{
@@ -373,9 +514,16 @@ var file_goscript_proto_rawDesc = []byte{
 	0x72, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x52, 0x0a, 0x45, 0x78, 0x70, 0x72, 0x65, 0x73, 0x73,
 	0x69, 0x6f, 0x6e, 0x12, 0x1c, 0x0a, 0x09, 0x53, 0x79, 0x6d, 0x62, 0x6f, 0x6c, 0x52, 0x65, 0x66,
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x52, 0x09, 0x53, 0x79, 0x6d, 0x62, 0x6f, 0x6c, 0x52, 0x65,
-	0x66, 0x42, 0x19, 0x48, 0x01, 0x5a, 0x15, 0x67, 0x6f, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x2f,
-	0x70, 0x6b, 0x67, 0x2f, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x69, 0x6e, 0x67, 0x62, 0x06, 0x70, 0x72,
-	0x6f, 0x74, 0x6f, 0x33,
+	0x66, 0x22, 0x24, 0x0a, 0x0c, 0x55, 0x36, 0x34, 0x43, 0x6f, 0x6e, 0x74, 0x61, 0x69, 0x6e, 0x65,
+	0x72, 0x12, 0x14, 0x0a, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04,
+	0x52, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x22, 0x27, 0x0a, 0x0f, 0x53, 0x74, 0x72, 0x69, 0x6e,
+	0x67, 0x43, 0x6f, 0x6e, 0x74, 0x61, 0x69, 0x6e, 0x65, 0x72, 0x12, 0x14, 0x0a, 0x05, 0x56, 0x61,
+	0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65,
+	0x22, 0x24, 0x0a, 0x0c, 0x46, 0x36, 0x34, 0x43, 0x6f, 0x6e, 0x74, 0x61, 0x69, 0x6e, 0x65, 0x72,
+	0x12, 0x14, 0x0a, 0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x01, 0x52,
+	0x05, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x42, 0x19, 0x48, 0x01, 0x5a, 0x15, 0x67, 0x6f, 0x73, 0x63,
+	0x72, 0x69, 0x70, 0x74, 0x2f, 0x70, 0x6b, 0x67, 0x2f, 0x65, 0x6e, 0x63, 0x6f, 0x64, 0x69, 0x6e,
+	0x67, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -390,22 +538,25 @@ func file_goscript_proto_rawDescGZIP() []byte {
 	return file_goscript_proto_rawDescData
 }
 
-var file_goscript_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_goscript_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_goscript_proto_goTypes = []interface{}{
 	(*Expression)(nil),       // 0: encoding.Expression
 	(*BinaryTypedValue)(nil), // 1: encoding.BinaryTypedValue
 	(*BinaryOperation)(nil),  // 2: encoding.BinaryOperation
 	(*Program)(nil),          // 3: encoding.Program
 	(*FunctionArgument)(nil), // 4: encoding.FunctionArgument
-	(*anypb.Any)(nil),        // 5: google.protobuf.Any
+	(*U64Container)(nil),     // 5: encoding.U64Container
+	(*StringContainer)(nil),  // 6: encoding.StringContainer
+	(*F64Container)(nil),     // 7: encoding.F64Container
+	(*anypb.Any)(nil),        // 8: google.protobuf.Any
 }
 var file_goscript_proto_depIdxs = []int32{
 	0, // 0: encoding.Expression.Left:type_name -> encoding.Expression
 	0, // 1: encoding.Expression.Right:type_name -> encoding.Expression
 	1, // 2: encoding.Expression.Value:type_name -> encoding.BinaryTypedValue
-	5, // 3: encoding.Expression.Args:type_name -> google.protobuf.Any
-	5, // 4: encoding.BinaryTypedValue.Value:type_name -> google.protobuf.Any
-	5, // 5: encoding.BinaryOperation.Args:type_name -> google.protobuf.Any
+	8, // 3: encoding.Expression.Args:type_name -> google.protobuf.Any
+	8, // 4: encoding.BinaryTypedValue.Value:type_name -> google.protobuf.Any
+	8, // 5: encoding.BinaryOperation.Args:type_name -> google.protobuf.Any
 	2, // 6: encoding.Program.Operations:type_name -> encoding.BinaryOperation
 	0, // 7: encoding.FunctionArgument.Expression:type_name -> encoding.Expression
 	8, // [8:8] is the sub-list for method output_type
@@ -481,6 +632,42 @@ func file_goscript_proto_init() {
 				return nil
 			}
 		}
+		file_goscript_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*U64Container); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_goscript_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*StringContainer); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_goscript_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*F64Container); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -488,7 +675,7 @@ func file_goscript_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_goscript_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

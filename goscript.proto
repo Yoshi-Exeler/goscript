@@ -37,3 +37,15 @@ message FunctionArgument {
     Expression Expression = 1;
     uint64 SymbolRef = 2;
 }
+
+message U64Container {
+    uint64 Value = 1;
+}
+
+message StringContainer {
+    string Value = 1;
+}
+
+message F64Container {
+    double Value = 1;
+}

@@ -21,9 +21,12 @@ gsr-prod:
 gsr-dev:
 	CGO_ENABLED=0 go build -o ./dist/gsr-dev ./src/cmd/gsc/gsr.go
 
+test:
+	go test --test.v ./src/pkg/
+
 lint:
 	golangci-lint run
 
-prod: lint encoding gsc-dev gsr-dev
+prod: lint test encoding gsc-dev gsr-dev
 
 dev: gsc-dev gsr-dev

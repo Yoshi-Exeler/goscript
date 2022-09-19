@@ -10,29 +10,6 @@ import (
 	"unicode"
 )
 
-// GSPrimitive is an enum of all primitives in goscript
-type GSPrimitive string
-
-const (
-	GPS_INT8    GSPrimitive = "int8"
-	GSP_INT16   GSPrimitive = "int16"
-	GSP_INT32   GSPrimitive = "int32"
-	GSP_INT64   GSPrimitive = "int64"
-	GSP_UINT8   GSPrimitive = "uint8"
-	GSP_UINT16  GSPrimitive = "uint16"
-	GSP_UINT32  GSPrimitive = "uint32"
-	GSP_UINT64  GSPrimitive = "uint64"
-	GSP_STRING  GSPrimitive = "string"
-	GSP_CHAR    GSPrimitive = "char"
-	GSP_BYTE    GSPrimitive = "byte"
-	GSP_FLOAT32 GSPrimitive = "float32"
-	GSP_FLOAT64 GSPrimitive = "float64"
-	GSP_ANY     GSPrimitive = "any"
-)
-
-// iterable list of all primitives
-var PRIMITIVES = [...]GSPrimitive{GPS_INT8, GSP_INT16, GSP_INT32, GSP_INT64, GSP_UINT8, GSP_UINT16, GSP_UINT32, GSP_UINT64, GSP_STRING, GSP_CHAR, GSP_BYTE, GSP_FLOAT32, GSP_FLOAT64, GSP_ANY}
-
 type GSKeyword string
 
 const (
@@ -69,10 +46,6 @@ var FLOAT_LITERAL = regexp.MustCompile(`(?m)^\-?[0-9]+\.{1}[0-9]+$`)
 var CHAR_LITERAL = regexp.MustCompile(`(?mU)'.{1}'`)
 var BOOLEAN_LITERAL = regexp.MustCompile(`(?m)^(?:true)?(?:false)?$`)
 
-// boolean constants
-const TRUE = "true"
-const FALSE = "false"
-
 type SymbolKind byte
 
 const (
@@ -90,21 +63,6 @@ func getSymbolKind(symbol string) SymbolKind {
 		return FNSYMBOL
 	}
 	return VSYMBOL
-}
-
-// isPrimitive checks if a token is a primitive
-func isPrimitive(token string) bool {
-	for _, primitive := range PRIMITIVES {
-		if token == string(primitive) {
-			return true
-		}
-	}
-	return false
-}
-
-// isSymbol checks if a token is a symbol
-func isSymbol(token string) bool {
-	return SYMBOL_NAME.Match([]byte(token))
 }
 
 // isKeyword checks if a token is a keyword
@@ -967,10 +925,6 @@ func parseArguments(args string) []IntermediateVar {
 		ret = append(ret, current)
 	}
 	return ret
-}
-
-func splitToLines(source string) []string {
-	return strings.Split(source, "\n")
 }
 
 var FUNC_REGEX = regexp.MustCompile(`(?msU)func ([a-zA-Z_]{1}[a-zA-Z0-9_]*)\((.*)\) (?:=> ([a-zA-Z0-9]*) )?{\n(.*)}\n>`)

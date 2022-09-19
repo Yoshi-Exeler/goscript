@@ -58,7 +58,7 @@ The following steps will be performed:
 - Replace Function Placeholders in expressions
 - Eliminate Dead code
 - Optimize:
-  - Resolve constant expressions as far as possible
+  - Resolve constant expressions as far as possible (WIP)
 
 - Generate the actual bytecode
 */
@@ -136,33 +136,37 @@ func (c *Compiler) generateLoop(op *IntermediateOperation) {
 	iteratorRef := c.symbolIndexByName[op.Args[0].(string)]
 	c.currentProgram.Operations = append(c.currentProgram.Operations, NewEnterScope())
 	c.currentProgram.Operations = append(c.currentProgram.Operations, NewBindOp(iteratorRef, op.Args[1].(IntermediateType).Type))
-	c.currentProgram.Operations = append(c.currentProgram.Operations, NewAssignExpressionOp(iteratorRef, c.fixVsymbols(op.Args[2].(*Expression))))
-	c.currentProgram.Operations = append(c.currentProgram.Operations, NewJumpIfNotOp(1, c.fixVsymbols(op.Args[3].(*Expression))))
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewAssignExpressionOp(iteratorRef, c.compileExpression(op.Args[2].(*Expression))))
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewJumpIfNotOp(1, c.compileExpression(op.Args[3].(*Expression))))
 	loopHeadAddr := len(c.currentProgram.Operations) - 1
 	c.currentOpIndex++
 	c.generateUntilClose()
 	c.currentProgram.Operations = append(c.currentProgram.Operations, NewJumpOp(loopHeadAddr))
 	c.currentProgram.Operations = append(c.currentProgram.Operations, NewExitScopeOp())
 	loopEndAddr := len(c.currentProgram.Operations) - 1
-	c.currentProgram.Operations[loopHeadAddr] = NewJumpIfNotOp(loopEndAddr, c.fixVsymbols(op.Args[3].(*Expression)))
+	c.currentProgram.Operations[loopHeadAddr] = NewJumpIfNotOp(loopEndAddr, c.compileExpression(op.Args[3].(*Expression)))
 }
 
-func (c *Compiler) fixVsymbols(expr *Expression) *Expression {
+func (c *Compiler) compileExpression(expr *Expression) *Expression {
+	return c.resolveCalls(c.resolveSymbols(expr))
+}
+
+func (c *Compiler) resolveSymbols(expr *Expression) *Expression {
 	if expr.Operator == BO_VSYMBOL_PLACEHOLDER {
 		expr.Operator = BO_VSYMBOL
 		expr.Ref = c.symbolIndexByName[expr.Value.Value.(string)]
 		expr.Value = nil
 	}
 	if expr.LeftExpression != nil {
-		expr.LeftExpression = c.fixVsymbols(expr.LeftExpression)
+		expr.LeftExpression = c.compileExpression(expr.LeftExpression)
 	}
 	if expr.RightExpression != nil {
-		expr.RightExpression = c.fixVsymbols(expr.RightExpression)
+		expr.RightExpression = c.compileExpression(expr.RightExpression)
 	}
 	return expr
 }
 
-func (c *Compiler) fixFunctionCalls(expr *Expression) *Expression {
+func (c *Compiler) resolveCalls(expr *Expression) *Expression {
 	if expr.Operator == BO_FUNCTION_CALL_PLACEHOLDER {
 		expr.Operator = BO_FUNCTION_CALL
 		// check if we have a base address for this function
@@ -176,10 +180,10 @@ func (c *Compiler) fixFunctionCalls(expr *Expression) *Expression {
 		expr.Ref = c.funcBaseByName[expr.Value.Value.(*FunctionCallPlaceholder).Name]
 	}
 	if expr.LeftExpression != nil {
-		expr.LeftExpression = c.fixFunctionCalls(expr.LeftExpression)
+		expr.LeftExpression = c.resolveCalls(expr.LeftExpression)
 	}
 	if expr.RightExpression != nil {
-		expr.RightExpression = c.fixFunctionCalls(expr.RightExpression)
+		expr.RightExpression = c.resolveCalls(expr.RightExpression)
 	}
 	return expr
 }
@@ -212,17 +216,17 @@ func (c *Compiler) generateUntilClose() {
 }
 
 func (c *Compiler) generateReturn(op *IntermediateOperation) {
-	c.currentProgram.Operations = append(c.currentProgram.Operations, NewReturnValueOp(c.fixVsymbols(op.Args[0].(*Expression))))
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewReturnValueOp(c.compileExpression(op.Args[0].(*Expression))))
 }
 
 func (c *Compiler) generateExpression(op *IntermediateOperation) {
-	c.currentProgram.Operations = append(c.currentProgram.Operations, NewExpressionOp(c.fixVsymbols(op.Args[0].(*Expression))))
+	c.currentProgram.Operations = append(c.currentProgram.Operations, NewExpressionOp(c.compileExpression(op.Args[0].(*Expression))))
 }
 
 func (c *Compiler) generateAssign(op *IntermediateOperation) {
 	c.currentProgram.Operations = append(c.currentProgram.Operations, NewBindOp(c.symbolIndexByName[op.Args[0].(string)], op.Args[1].(IntermediateType).Type))
 	if len(op.Args) == 3 {
-		c.currentProgram.Operations = append(c.currentProgram.Operations, NewAssignExpressionOp(c.symbolIndexByName[op.Args[0].(string)], c.fixVsymbols(op.Args[2].(*Expression))))
+		c.currentProgram.Operations = append(c.currentProgram.Operations, NewAssignExpressionOp(c.symbolIndexByName[op.Args[0].(string)], c.compileExpression(op.Args[2].(*Expression))))
 	} else {
 		c.currentProgram.Operations = append(c.currentProgram.Operations, NewAssignExpressionOp(c.symbolIndexByName[op.Args[0].(string)], NewConstantExpression(defaultValuePtrOf(op.Args[1].(IntermediateType).Type), op.Args[1].(IntermediateType).Type)))
 	}

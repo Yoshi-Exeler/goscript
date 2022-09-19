@@ -28,23 +28,23 @@ func TestCompileSimple(t *testing.T) {
 	fmt.Println(prog.String())
 }
 
-func TestCompileHelloWorld(t *testing.T) {
-	t.Parallel()
-	compiler := NewCompiler()
-	prog, err := compiler.Compile(CompileJob{
-		MainFilePath:       filepath.Join(TESTS, "hello.gs"),
-		LocalWorkspaceRoot: TESTS,
-		VendorPath:         VENDORPATH,
-		StandardLibPath:    STDPATH,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(prog.String())
-	rt := NewRuntime()
-	val := rt.Exec(*prog)
-	conv := *val.(*BinaryTypedValue).Value.(*string)
-	if conv != "Hello World" {
-		t.Fatalf("failed to run hello world, expected 'Hello World' but got '%v'", conv)
-	}
-}
+// func TestCompileHelloWorld(t *testing.T) {
+// 	t.Parallel()
+// 	compiler := NewCompiler()
+// 	prog, err := compiler.Compile(CompileJob{
+// 		MainFilePath:       filepath.Join(TESTS, "hello.gs"),
+// 		LocalWorkspaceRoot: TESTS,
+// 		VendorPath:         VENDORPATH,
+// 		StandardLibPath:    STDPATH,
+// 	})
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	fmt.Println(prog.String())
+// 	rt := NewRuntime()
+// 	val := rt.Exec(*prog)
+// 	conv := *val.(*BinaryTypedValue).Value.(*string)
+// 	if conv != "Hello World" {
+// 		t.Fatalf("failed to run hello world, expected 'Hello World' but got '%v'", conv)
+// 	}
+// }

@@ -564,39 +564,3 @@ func (b *BinaryType) isNumeric() bool {
 		return false
 	}
 }
-
-func (b *BinaryType) isIntegerType() bool {
-	switch *b {
-	case BT_INT8:
-		return true
-	case BT_INT16:
-		return true
-	case BT_INT32:
-		return true
-	case BT_INT64:
-		return true
-	case BT_UINT8:
-		return true
-	case BT_UINT16:
-		return true
-	case BT_UINT32:
-		return true
-	case BT_UINT64:
-		return true
-	case BT_BYTE:
-		return true
-	default:
-		return false
-	}
-}
-
-func (b *BinaryType) isFloatType() bool {
-	switch *b {
-	case BT_FLOAT32:
-		return true
-	case BT_FLOAT64:
-		return true
-	default:
-		return false
-	}
-}

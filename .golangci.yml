@@ -44,12 +44,13 @@ linters:
    - 'cyclop'
    - 'errorlint'
    - 'wsl'
-   - 'lll'
+   - 'lll' # way too trigger happy
    - 'revive'
-   - 'godot'
+   - 'godot' # required comments to end in a dot
    - 'gci'
-   - 'funlen'
-   - 'forbidigo'
+   - 'funlen' # way too trigger happy
+   - 'forbidigo' # does not allow the use of fmt.Print
+   - 'stylecheck' # requires all comments to start with the name of the thing that is being commented
 
 run:
   timeout: 5s

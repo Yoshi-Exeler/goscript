@@ -7,7 +7,7 @@ encoding:
 	protoc ./proto/goscript.proto \
 	--go_out=$(GO_GEN_DIR) \
 	--proto_path=$(shell pwd)
-	cp -R ./proto/gen/goscript/pkg/encoding ./pkg/
+	cp -R ./proto/gen/goscript/pkg/encoding ./src/pkg/
 
 gsc-prod:
 	CGO_ENABLED=0 go build -o ./dist/gsc --trimpath --ldflags="-s -w" ./src/cmd/gsc/gsc.go

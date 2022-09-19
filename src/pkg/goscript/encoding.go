@@ -3,7 +3,7 @@ package goscript
 import (
 	"fmt"
 
-	"github.com/Yoshi-Exeler/goscript/pkg/encoding"
+	"github.com/Yoshi-Exeler/goscript/src/pkg/encoding"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 )

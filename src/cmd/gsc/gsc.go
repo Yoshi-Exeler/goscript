@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/Yoshi-Exeler/goscript/pkg/goscript"
+	"github.com/Yoshi-Exeler/goscript/src/pkg/goscript"
 )
 
 func main() {

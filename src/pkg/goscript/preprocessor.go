@@ -67,7 +67,7 @@ func generateFQSC(source *ApplicationSource) (string, error) {
 	fullFQSC += "\n>"
 	// dump fqsc to a file if FQSC debugging is enabled
 	if DEBUG_DUMP_FQSC {
-		os.WriteFile("fqsc.gs", []byte(fullFQSC), 0600)
+		os.WriteFile("debug_dump.fqsc", []byte(fullFQSC), 0600)
 	}
 	return fullFQSC, nil
 }

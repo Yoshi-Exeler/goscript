@@ -11,5 +11,8 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# dont include fqsc dumps in the git repo
+*.fqsc
+
+# dont include any binaries
+dist/*

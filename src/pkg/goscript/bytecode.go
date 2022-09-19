@@ -91,7 +91,7 @@ const (
 
 /*
 	if else snippet
-	0 ENTER_SCOPE                     # in an if-else, we will definetly enter a block
+	0 ENTER_SCOPE                     # in an if-else, we will definitely enter a block
 	1 JUMP_IF_NOT VS(1) > 10 5        # check for the else case, if the main condition is not true, we jump into the else block
 	2... if block content ...         # do the stuff for the if branch
 	4 JUMP 6                          # jump onto the exit scope at the end
@@ -530,37 +530,4 @@ func (e *Expression) IsConstant() bool {
 
 func (e *Expression) IsFunction() bool {
 	return e.Operator == BO_FUNCTION_CALL
-}
-
-func (e *Expression) isVSymbol() bool {
-	return e.Operator == BO_VSYMBOL
-}
-
-func (b *BinaryType) isNumeric() bool {
-	switch *b {
-	case BT_INT8:
-		return true
-	case BT_INT16:
-		return true
-	case BT_INT32:
-		return true
-	case BT_INT64:
-		return true
-	case BT_UINT8:
-		return true
-	case BT_UINT16:
-		return true
-	case BT_UINT32:
-		return true
-	case BT_UINT64:
-		return true
-	case BT_BYTE:
-		return true
-	case BT_FLOAT32:
-		return true
-	case BT_FLOAT64:
-		return true
-	default:
-		return false
-	}
 }

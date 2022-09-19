@@ -7,9 +7,7 @@ linters-settings:
     min-occurrences: 3
   gocritic:
     enabled-tags:
-      - diagnostic
-      - experimental
-      - opinionated
+      - diagnostic 
       - performance
       - style
     disabled-checks:
@@ -51,6 +49,7 @@ linters:
    - 'funlen' # way too trigger happy
    - 'forbidigo' # does not allow the use of fmt.Print
    - 'stylecheck' # requires all comments to start with the name of the thing that is being commented
+   - 'wrapcheck' # requires the use of error wrapping
 
 run:
   timeout: 5s

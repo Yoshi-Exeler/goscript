@@ -21,7 +21,7 @@ func TestCompileSimple(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	f, _ := os.OpenFile("./externals.gob", os.O_RDWR, 0644)
+	f, _ := os.OpenFile("./externals.gob", os.O_RDWR, 0600)
 	enc := gob.NewEncoder(f)
 	enc.Encode(prog)
 	f.Close()

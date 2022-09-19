@@ -590,14 +590,14 @@ func (r *Runtime) builtinToChar(args []*FunctionArgument) *BinaryTypedValue {
 func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 	// convert the builtin index to a builtin index type
 	builtinIdx := BuiltinFunction(e.Ref)
-	// call the apropriate handler
+	// call the appropriate handler
 	switch builtinIdx {
 	case BF_LEN:
 		return r.builtinLen(e.Args)
 	case BF_INPUT:
-		return r.builtinInput(e.Args)
+		return r.builtinInput()
 	case BF_INPUTLN:
-		return r.builtinInputln(e.Args)
+		return r.builtinInputln()
 	case BF_MAX:
 		panic("not implemented")
 	case BF_MIN:
@@ -639,8 +639,7 @@ func (r *Runtime) execBuiltinCall(e *Expression) *BinaryTypedValue {
 	}
 }
 
-func (r *Runtime) builtinInput(args []*FunctionArgument) *BinaryTypedValue {
-	// switch stdin into 'raw' mode
+func (r *Runtime) builtinInput() *BinaryTypedValue {
 	buff := make([]byte, 1)
 	os.Stdin.Read(buff)
 	val := rune(buff[0])
@@ -650,7 +649,7 @@ func (r *Runtime) builtinInput(args []*FunctionArgument) *BinaryTypedValue {
 	}
 }
 
-func (r *Runtime) builtinInputln(args []*FunctionArgument) *BinaryTypedValue {
+func (r *Runtime) builtinInputln() *BinaryTypedValue {
 	reader := bufio.NewReader(os.Stdin)
 	text, err := reader.ReadString('\n')
 	if err != nil {

@@ -17,7 +17,7 @@ func main() {
 
 	rt := goscript.NewRuntime()
 
-	f, err := os.OpenFile(*file, os.O_RDWR, 0644)
+	f, err := os.OpenFile(*file, os.O_RDWR, 0600)
 	if err != nil {
 		log.Fatal(err)
 	}

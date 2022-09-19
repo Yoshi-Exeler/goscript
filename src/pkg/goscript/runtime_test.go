@@ -350,7 +350,7 @@ func TestNumericTypecastU64ToI64(t *testing.T) {
 	fmt.Println(testProgram.String())
 	runtime := NewRuntime()
 	runtime.Exec(testProgram)
-	fmt.Printf(runtime.SymbolTable[2].String())
+	fmt.Println(runtime.SymbolTable[2].String())
 	_ = runtime.SymbolTable[2].Value.(*int64)
 }
 
@@ -380,7 +380,7 @@ func TestNumericToStringTypecast(t *testing.T) {
 	fmt.Println(testProgram.String())
 	runtime := NewRuntime()
 	runtime.Exec(testProgram)
-	fmt.Printf(runtime.SymbolTable[2].String())
+	fmt.Println(runtime.SymbolTable[2].String())
 	_ = runtime.SymbolTable[2].Value.(*string)
 }
 
@@ -410,7 +410,7 @@ func TestNumericToCharTypecast(t *testing.T) {
 	fmt.Println(testProgram.String())
 	runtime := NewRuntime()
 	runtime.Exec(testProgram)
-	fmt.Printf(runtime.SymbolTable[2].String())
+	fmt.Println(runtime.SymbolTable[2].String())
 	_ = runtime.SymbolTable[2].Value.(*rune)
 }
 
@@ -439,6 +439,6 @@ func TestIndexIntoAndCast(t *testing.T) {
 	fmt.Println(testProgram.String())
 	runtime := NewRuntime()
 	runtime.Exec(testProgram)
-	fmt.Printf(runtime.SymbolTable[2].String())
+	fmt.Println(runtime.SymbolTable[2].String())
 	_ = runtime.SymbolTable[2].Value.(*rune)
 }

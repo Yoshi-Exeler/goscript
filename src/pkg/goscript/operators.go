@@ -521,7 +521,6 @@ func genericLesser[T Numeric](l any, r any) bool {
 	lptr := l.(*T)
 	rptr := r.(*T)
 	return *lptr < *rptr
-
 }
 
 func genericGreaterEquals[T Numeric](l any, r any) bool {
@@ -550,10 +549,6 @@ func genericMultiply[T Numeric](l any, r any, v any) {
 func genericDivide[T Numeric](l any, r any, v *BinaryTypedValue) {
 	result := float64(*l.(*T)) / float64(*r.(*T))
 	v.Value = &result
-}
-
-func genericCast[T Numeric, RT Numeric](value any) RT {
-	return RT(value.(T))
 }
 
 func genericIndirectCast[T Numeric, RT Numeric](value any) RT {

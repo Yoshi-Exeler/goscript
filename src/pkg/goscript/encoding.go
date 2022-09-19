@@ -47,7 +47,7 @@ func encodeAny(arg any) *anypb.Any {
 	case *uint32:
 		return encodeU64Container(uint64(*val))
 	case *uint64:
-		return encodeU64Container(uint64(*val))
+		return encodeU64Container(*val)
 	case *int8:
 		return encodeU64Container(uint64(*val))
 	case *int16:
@@ -88,7 +88,7 @@ func encodeAny(arg any) *anypb.Any {
 		return encodeU64Container(uint64(val))
 	case *string:
 		buff, err := proto.Marshal(&encoding.StringContainer{
-			Value: string(*val),
+			Value: *val,
 		})
 		if err != nil {
 			panic("failed to encode string to proto buffer string")

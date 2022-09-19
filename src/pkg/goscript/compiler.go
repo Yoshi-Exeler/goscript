@@ -128,10 +128,6 @@ func (c *Compiler) compileFunction(def *FunctionDefinition) {
 	}
 }
 
-func (c *Compiler) generateClosingBracket() {
-	c.currentProgram.Operations = append(c.currentProgram.Operations, NewExitScopeOp())
-}
-
 func (c *Compiler) generateLoop(op *IntermediateOperation) {
 	iteratorRef := c.symbolIndexByName[op.Args[0].(string)]
 	c.currentProgram.Operations = append(c.currentProgram.Operations, NewEnterScope())
@@ -212,7 +208,6 @@ func (c *Compiler) generateUntilClose() {
 		}
 		c.currentOpIndex++
 	}
-
 }
 
 func (c *Compiler) generateReturn(op *IntermediateOperation) {
@@ -235,6 +230,7 @@ func (c *Compiler) generateAssign(op *IntermediateOperation) {
 func (c *Compiler) prescanFunction(def *FunctionDefinition) {
 	// scan the parameters
 	for _, param := range def.Accepts {
+		param := param
 		c.symbolByName[param.Name] = &param
 		c.symbolIndexByName[param.Name] = c.currentSymbolIndex
 		c.currentSymbolIndex++

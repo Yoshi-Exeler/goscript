@@ -46,25 +46,6 @@ var FLOAT_LITERAL = regexp.MustCompile(`(?m)^\-?[0-9]+\.{1}[0-9]+$`)
 var CHAR_LITERAL = regexp.MustCompile(`(?mU)'.{1}'`)
 var BOOLEAN_LITERAL = regexp.MustCompile(`(?m)^(?:true)?(?:false)?$`)
 
-type SymbolKind byte
-
-const (
-	VSYMBOL  SymbolKind = 1
-	STSYMBOL SymbolKind = 2
-	FNSYMBOL SymbolKind = 3
-)
-
-// getSymbolKind returns the kind of the specified symbol, assuming it is guaranteed to be a symbol
-func getSymbolKind(symbol string) SymbolKind {
-	if strings.HasPrefix(symbol, "st_") {
-		return STSYMBOL
-	}
-	if strings.HasPrefix(symbol, "fn_") {
-		return FNSYMBOL
-	}
-	return VSYMBOL
-}
-
 // isKeyword checks if a token is a keyword
 func isKeyword(token string) bool {
 	for _, keyword := range KEYWORDS {
@@ -172,11 +153,11 @@ func parseKeyWordLine(line string, keyword string) IntermediateOperation {
 	case "foreach":
 		return parseForeachLine(line)
 	case "break":
-		return parseBreakLine(line)
+		return parseBreakLine()
 	case "return":
 		return parseReturnLine(line)
 	case "}":
-		return parseClosingBracketLine(line)
+		return parseClosingBracketLine()
 	default:
 		panic(fmt.Sprintf("encountered unknown keyword %v", keyword))
 	}
@@ -807,7 +788,7 @@ func parseForeachLine(line string) IntermediateOperation {
 	return ret
 }
 
-func parseBreakLine(line string) IntermediateOperation {
+func parseBreakLine() IntermediateOperation {
 	return IntermediateOperation{
 		Type: IM_BREAK,
 		Args: []any{},
@@ -839,7 +820,7 @@ func parseReturnLine(line string) IntermediateOperation {
 	return ret
 }
 
-func parseClosingBracketLine(line string) IntermediateOperation {
+func parseClosingBracketLine() IntermediateOperation {
 	return IntermediateOperation{
 		Type: IM_CLOSING_BRACKET,
 		Args: []any{},

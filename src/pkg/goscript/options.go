@@ -1,6 +1,6 @@
 package goscript
 
-// this package will be temporarily used during developement to have easy configuration
+// this package will be temporarily used during development to have easy configuration
 
 var VENDORPATH = "../../../goscript/gs_vendor"
 

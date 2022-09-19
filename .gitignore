@@ -16,3 +16,6 @@
 
 # dont include any binaries
 dist/*
+
+# dont include the generation directory for the protocol buffer compilation
+proto/gen/*

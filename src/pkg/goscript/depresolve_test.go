@@ -6,6 +6,7 @@ import (
 
 // TestGetRequiredExternals parses the externals of the specified file
 func TestGetRequiredExternals(t *testing.T) {
+	t.Parallel()
 	ret, err := getRequiredExternals("../../tests/externals.gs")
 	if err != nil {
 		t.Fatalf("got error %v", err)

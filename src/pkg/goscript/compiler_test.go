@@ -9,6 +9,7 @@ import (
 )
 
 func TestCompileSimple(t *testing.T) {
+	t.Parallel()
 	compiler := NewCompiler()
 	prog, err := compiler.Compile(CompileJob{
 		MainFilePath:       "../../tests/externals.gs",
@@ -27,6 +28,7 @@ func TestCompileSimple(t *testing.T) {
 }
 
 func TestCompileHelloWorld(t *testing.T) {
+	t.Parallel()
 	compiler := NewCompiler()
 	prog, err := compiler.Compile(CompileJob{
 		MainFilePath:       "../../tests/hello.gs",

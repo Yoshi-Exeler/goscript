@@ -1,0 +1,55 @@
+linters-settings:
+  funlen:
+    lines: 100
+    statements: 50
+  goconst:
+    min-len: 2
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+    disabled-checks:
+      - dupImport # https://github.com/go-critic/go-critic/issues/845
+      - ifElseChain
+      - octalLiteral
+      - whyNoLint
+
+linters:
+ enable-all: true
+ disable:
+   # deprecated
+   - 'maligned'
+   - 'nosnakecase'
+   - 'exhaustivestruct'
+   - 'interfacer'
+   - 'scopelint'
+   - 'golint'
+   - 'structcheck'
+   - 'varcheck'
+   - 'deadcode'
+   - 'ifshort'
+   # i dissagree with these / too many false-positives
+   - 'dupl'
+   - 'tagliatelle'
+   - 'gomnd'
+   - 'varnamelen'
+   - 'goerr113'
+   - 'nlreturn'
+   - 'gochecknoglobals'
+   - 'exhaustruct'
+   - 'cyclop'
+   - 'errorlint'
+   - 'wsl'
+   - 'lll'
+   - 'revive'
+   - 'godot'
+   - 'gci'
+   - 'funlen'
+   - 'forbidigo'
+
+run:
+  timeout: 5s

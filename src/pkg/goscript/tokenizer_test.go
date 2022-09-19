@@ -48,6 +48,7 @@ return 1
 // }
 
 func TestParseExprAddition(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`5+5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
@@ -58,6 +59,7 @@ func TestParseExprAddition(t *testing.T) {
 }
 
 func TestParseExprAdditionF64(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`5.5+5.5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
@@ -68,16 +70,18 @@ func TestParseExprAdditionF64(t *testing.T) {
 }
 
 func TestParseExprSubtraction(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`10-5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
 	res := *val.Value.(*uint64)
 	if res != 5 {
-		t.Fatalf("expected 5+5 to be 10 but was %v", res)
+		t.Fatalf("expected 10-5 to be 5 but was %v", res)
 	}
 }
 
 func TestParseExprSubtractionF64(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`10.5-5.5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
@@ -88,6 +92,7 @@ func TestParseExprSubtractionF64(t *testing.T) {
 }
 
 func TestParseExprMultiplication(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`10*10`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
@@ -98,6 +103,7 @@ func TestParseExprMultiplication(t *testing.T) {
 }
 
 func TestParseExprMultiplicationF64(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`10.0*0.5`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
@@ -108,6 +114,7 @@ func TestParseExprMultiplicationF64(t *testing.T) {
 }
 
 func TestParseExprDivision(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`10/2`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
@@ -118,6 +125,7 @@ func TestParseExprDivision(t *testing.T) {
 }
 
 func TestParseExprDivisionF64(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`10.0/2.0`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
@@ -128,6 +136,7 @@ func TestParseExprDivisionF64(t *testing.T) {
 }
 
 func TestParseExprSimpleOrder(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`5+10*10`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
@@ -138,6 +147,7 @@ func TestParseExprSimpleOrder(t *testing.T) {
 }
 
 func TestParseExprSimpleBrackets(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`(5+5)*10-(10-3*2)`)
 	rt := NewRuntime()
 	val := rt.ResolveExpression(expr)
@@ -148,11 +158,13 @@ func TestParseExprSimpleBrackets(t *testing.T) {
 }
 
 func TestParseFunctionCall(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`test(5*7+1)`)
 	fmt.Printf("%+v\n", expr.Value.Value)
 }
 
 func TestParseSymbolExpression(t *testing.T) {
+	t.Parallel()
 	expr := parseExpression(`myVar`)
 	fmt.Printf("%+v\n", expr.Value.Value)
 }

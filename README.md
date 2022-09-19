@@ -1,2 +1,2 @@
 # goscript
-interpreted scripting language written in golang
+productivity oriented, AOT compiled, platform independent scripting language written in golang

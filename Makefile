@@ -22,7 +22,7 @@ gsr-dev:
 	CGO_ENABLED=0 go build -o ./dist/gsr-dev ./src/cmd/gsc/gsr.go
 
 test:
-	go test --test.v ./src/pkg/
+	go test --test.v ./src/pkg/goscript/
 
 lint:
 	golangci-lint run

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -12,8 +13,8 @@ func TestCompileSimple(t *testing.T) {
 	t.Parallel()
 	compiler := NewCompiler()
 	prog, err := compiler.Compile(CompileJob{
-		MainFilePath:       "../../tests/externals.gs",
-		LocalWorkspaceRoot: "../../tests/",
+		MainFilePath:       filepath.Join(TESTS, "externals.gs"),
+		LocalWorkspaceRoot: TESTS,
 		VendorPath:         VENDORPATH,
 		StandardLibPath:    STDPATH,
 	})
@@ -31,8 +32,8 @@ func TestCompileHelloWorld(t *testing.T) {
 	t.Parallel()
 	compiler := NewCompiler()
 	prog, err := compiler.Compile(CompileJob{
-		MainFilePath:       "../../tests/hello.gs",
-		LocalWorkspaceRoot: "../../tests/",
+		MainFilePath:       filepath.Join(TESTS, "hello.gs"),
+		LocalWorkspaceRoot: TESTS,
 		VendorPath:         VENDORPATH,
 		StandardLibPath:    STDPATH,
 	})

@@ -1,12 +1,13 @@
 package goscript
 
 import (
+	"path/filepath"
 	"testing"
 )
 
 func TestGenerateFQSC(t *testing.T) {
 	t.Parallel()
-	ret, err := discoverSources("../../tests/externals.gs", "../../tests/")
+	ret, err := discoverSources(filepath.Join(TESTS, "externals.gs"), TESTS)
 	if err != nil {
 		t.Fatalf("sourcewalk failed with error %v", err)
 	}

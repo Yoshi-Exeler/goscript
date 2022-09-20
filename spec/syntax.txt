@@ -29,17 +29,15 @@ foreach index, element in list {}
 foreach <name1>, <name2> in <name3> {}
 
 function definition:
-func myfunc(a: string, b: int) => x: int, y: string {}
-func <name>(<p1>: <type>, <p2>: <type>) => <rp1>: <type>, <rp2>: <type> {}
+func myfunc(a: string, b: int) => (int, string) {}
+func <name>(<p1>: <type>, <p2>: <type>) => (<type>, <type>) {}
 
 Arithmetic Operators:
 +  = simple addition
 -  = simple subtraction
 *  = simple multiplication
-/  = float division
-// = integer division
+/  = division 
 %  = modulo
-** = expo
 
 Comparison Operators:
 >  = bigger than
@@ -47,11 +45,11 @@ Comparison Operators:
 >= = bigger or equal
 <= = smaller or equal
 == = exactly equal
-!= = not equal
 
 Logical Operators:
 && = logical and
 || = logical or
+!  = inversion
 
 Bitwise Operators:
 &  = bitwise and
@@ -61,38 +59,82 @@ Bitwise Operators:
 ^  = XOR
 ~  = invert
 
-Shortcodes:
-a += b  >> a = a +  b 
-a -= b  >> a = a -  b
-a *= b  >> a = a *  b
-a /= b  >> a = a /  b
-a //= b >> a = a // b
-a &= b  >> a = a &  b
-a |= b  >> a = a |  b
-a ^= b  >> a = a ^  b  
-a++     >> a = a + 1
-a--     >> a = a - 1
+Preprocessor Macros:
+a += b >> a = a + b 
+a -= b >> a = a - b
+a *= b >> a = a * b
+a /= b >> a = a / b
+a &= b >> a = a & b
+a |= b >> a = a | b
+a ^= b >> a = a ^ b
+a++    >> a = a + 1
+a--    >> a = a - 1
 
 
-List of primitives:
-int8, int16, int32, int64
-uint8, uint16, uint32, uint64
+List of Basic Types:
+i8, i16, i32, i64
+u8, u16, u32, u64
 string, char
 byte
-float32, float64
+f32, f64
 any
 
-Composing Types:
-struct MyStruct {
-    A: string
-    B: int64
-    C: byte
-}
-struct <name> {
-    <name>: <type>
-    <name>: <type>
-    <name>: <type>
-}
+Composable Types:
+
+List<T Any>
+    Uniformely typed dynamic sized array.
+    Type of elements can be inferred from the inserted element type when initializing a non-empty list.
+    For Example: let myList: List = ["a","b","c"] automatically infers the element type to be string
+    When using untyped integer constants the assumed type will be i64, for floats it will be f64.
+
+    Operators:
+    The plus operator has the following overloads for the list datatype:
+    List<T> = List<T> + T = append the element to the list
+    List<T> = List<T> + List<T> = append both lists togehter
+    List<T> = List<T> + Vector<T> = append all dimensions of the vector to the list
+
+Vector<T Numeric>
+    Type alias for list that only accepts numeric element types and has different overloads.
+
+    Operators:
+    Vector<T> = Vector<T> + Vector<T> = adds all dimensions of the vectors
+    Vector<T> = Vector<T> - Vector<T> = subtracts all dimensions of the vectors
+    Vector<T> = Vector<T> * Vector<T> = multiplies all dimensions of the vectors
+    Vector<T> = Vector<T> / Vector<T> = divides all dimensions of the vectors
+    Vector<T> = Vector<T> + T = adds the constant to all dimensions of the vector
+    Vector<T> = Vector<T> - T = subtracts the constant from all dimensions of the vector
+    Vector<T> = Vector<T> * T = multiplies all dimensions of the vector with the constant
+    Vector<T> = Vector<T> / T = divides all dimensions of the vector by the constant
+
+Tensor<T Numeric>
+    Type alias for multidimensional lists with numeric element types that has additional overloads
+
+    Tensor[N]<T> = Tensor[N]<T> + Tensor[N]<T> = adds all dimensions of the tensors
+    Tensor[N]<T> = Tensor[N]<T> - Tensor[N]<T> = subtracts all dimensions of the tensors
+    Tensor[N]<T> = Tensor[N]<T> * Tensor[N]<T> = multiplies all dimensions of the tensors
+    Tensor[N]<T> = Tensor[N]<T> / Tensor[N]<T> = divides all dimensions of the tensors
+    Tensor[N]<T> = Tensor[N]<T> + T = adds the constant to all dimensions of the tensor
+    Tensor[N]<T> = Tensor[N]<T> - T = subtracts the constant from all dimensions of the tensor
+    Tensor[N]<T> = Tensor[N]<T> * T = multiplies all dimensions of the tensor with the constant
+    Tensor[N]<T> = Tensor[N]<T> / T = divides all dimensions of the tensor by the constant
+
+Map<K Comparable, V any>
+    
+
+
+Pointer<T any>
+    Typesafe pointer operators:
+    Pointer<T> = &T = constructs a Pointer<T> from a T
+    &T is a preprocessor macro defined as follows:
+        &T = Pointer<T>(&&T)
+    T = *Pointer<T> = derefecrences a Pointer<T> into a T
+
+Direct (unsafe) memory operations:
+    let unsafe_ptr := Pointer<uint64>(0x3cff) = initializes a typed pointer directly from a virtual memory address
+    let mem_addr: uint64 = &&T = gets the numeric memory address of T
+    
+
+    
 
 Modules:
 a source file inherits the module name of its parent directory

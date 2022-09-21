@@ -12,7 +12,7 @@ import (
 	}
 */
 func TestAssignConstant(t *testing.T) {
-	t.Parallel()
+
 	eleven := uint8(11)
 	testProgram := Program{
 		Operations: []BinaryOperation{
@@ -31,11 +31,11 @@ func TestAssignConstant(t *testing.T) {
 }
 
 func TestAssignArrayConstant(t *testing.T) {
-	t.Parallel()
+
 	eleven := uint8(11)
 	testProgram := Program{
 		Operations: []BinaryOperation{
-			NewBindOp(1, BT_ARRAY),
+			NewBindOp(1, BT_LIST),
 			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
 				Type:  BT_UINT8,
 				Value: &eleven,
@@ -54,12 +54,12 @@ func TestAssignArrayConstant(t *testing.T) {
 }
 
 func TestArrayIndexInto(t *testing.T) {
-	t.Parallel()
+
 	zero := int64(0)
 	eleven := uint8(11)
 	testProgram := Program{
 		Operations: []BinaryOperation{
-			NewBindOp(1, BT_ARRAY),
+			NewBindOp(1, BT_LIST),
 			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
 				Type:  BT_UINT8,
 				Value: &eleven,
@@ -80,11 +80,11 @@ func TestArrayIndexInto(t *testing.T) {
 }
 
 func TestArrayGrow(t *testing.T) {
-	t.Parallel()
+
 	eleven := uint8(11)
 	testProgram := Program{
 		Operations: []BinaryOperation{
-			NewBindOp(1, BT_ARRAY),
+			NewBindOp(1, BT_LIST),
 			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
 				Type:  BT_UINT8,
 				Value: &eleven,
@@ -104,11 +104,11 @@ func TestArrayGrow(t *testing.T) {
 }
 
 func TestArrayShrink(t *testing.T) {
-	t.Parallel()
+
 	eleven := uint8(11)
 	testProgram := Program{
 		Operations: []BinaryOperation{
-			NewBindOp(1, BT_ARRAY),
+			NewBindOp(1, BT_LIST),
 			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{&BinaryTypedValue{
 				Type:  BT_UINT8,
 				Value: &eleven,
@@ -138,7 +138,7 @@ func TestArrayShrink(t *testing.T) {
 	}
 */
 func TestAssignFunctionReturnValue(t *testing.T) {
-	t.Parallel()
+
 	eleven := uint8(11)
 	testProgram := Program{
 		Operations: []BinaryOperation{
@@ -191,7 +191,7 @@ func TestAssignFunctionReturnValue(t *testing.T) {
 	0 ENTER_SCOPE
 */
 func TestLoopAssign(t *testing.T) {
-	t.Parallel()
+
 	zero := uint64(0)
 	zero2 := uint64(0)
 	zero3 := uint64(0)
@@ -247,7 +247,7 @@ func TestLoopAssign(t *testing.T) {
 }
 
 func TestPrintBuiltin(t *testing.T) {
-	t.Parallel()
+
 	eleven := uint8(11)
 	testProgram := Program{
 		Operations: []BinaryOperation{
@@ -271,7 +271,7 @@ func TestPrintBuiltin(t *testing.T) {
 }
 
 func TestPrintlnBuiltin(t *testing.T) {
-	t.Parallel()
+
 	eleven := uint8(12)
 	testProgram := Program{
 		Operations: []BinaryOperation{
@@ -295,7 +295,7 @@ func TestPrintlnBuiltin(t *testing.T) {
 }
 
 func TestPrintfBuiltin(t *testing.T) {
-	t.Parallel()
+
 	fstr := "%x\n"
 	number := uint8(143)
 	testProgram := Program{
@@ -325,7 +325,7 @@ func TestPrintfBuiltin(t *testing.T) {
 }
 
 func TestNumericTypecastU64ToI64(t *testing.T) {
-	t.Parallel()
+
 	number := uint64(143)
 	zero := int64(0)
 	testProgram := Program{
@@ -355,7 +355,7 @@ func TestNumericTypecastU64ToI64(t *testing.T) {
 }
 
 func TestNumericToStringTypecast(t *testing.T) {
-	t.Parallel()
+
 	number := uint64(143)
 	str := ""
 	testProgram := Program{
@@ -385,7 +385,7 @@ func TestNumericToStringTypecast(t *testing.T) {
 }
 
 func TestNumericToCharTypecast(t *testing.T) {
-	t.Parallel()
+
 	number := uint64(97)
 	str := rune(0)
 	testProgram := Program{
@@ -415,11 +415,11 @@ func TestNumericToCharTypecast(t *testing.T) {
 }
 
 func TestIndexIntoAndCast(t *testing.T) {
-	t.Parallel()
+
 	index := uint64(2)
 	testProgram := Program{
 		Operations: []BinaryOperation{
-			NewBindOp(1, BT_ARRAY),
+			NewBindOp(1, BT_LIST),
 			NewAssignExpressionOp(1, NewArrayExpression([]*BinaryTypedValue{})),
 			NewGrowOperation(1, 10, BT_UINT8),
 			NewBindOp(2, BT_CHAR),

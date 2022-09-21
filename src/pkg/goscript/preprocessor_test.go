@@ -6,7 +6,7 @@ import (
 )
 
 func TestGenerateFQSC(t *testing.T) {
-	t.Parallel()
+
 	ret, err := discoverSources(filepath.Join(TESTS, "externals.gs"), TESTS)
 	if err != nil {
 		t.Fatalf("sourcewalk failed with error %v", err)

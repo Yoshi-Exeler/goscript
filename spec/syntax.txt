@@ -36,6 +36,7 @@ Arithmetic Operators:
 +  = simple addition
 -  = simple subtraction
 *  = simple multiplication
+** = exponentation operator
 /  = division 
 %  = modulo
 
@@ -132,9 +133,6 @@ Pointer<T any>
 Direct (unsafe) memory operations:
     let unsafe_ptr := Pointer<uint64>(0x3cff) = initializes a typed pointer directly from a virtual memory address
     let mem_addr: uint64 = &&T = gets the numeric memory address of T
-    
-
-    
 
 Modules:
 a source file inherits the module name of its parent directory

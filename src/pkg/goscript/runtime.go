@@ -178,7 +178,7 @@ func (r *Runtime) unlinkedAssign(target *BinaryTypedValue, value *BinaryTypedVal
 	case BT_BOOLEAN:
 		// assign the underlying value of value to the underlying value of target
 		*target.Value.(*bool) = *value.Value.(*bool)
-	case BT_ARRAY:
+	case BT_LIST:
 		// assign the underlying value of value to the underlying value of target
 		*target.Value.(*[]*BinaryTypedValue) = *value.Value.(*[]*BinaryTypedValue)
 	default:
@@ -258,7 +258,7 @@ func (r *Runtime) unlink(value *BinaryTypedValue) *BinaryTypedValue {
 		underlying := *value.Value.(*bool)
 		value.Value = &underlying
 		return value
-	case BT_ARRAY:
+	case BT_LIST:
 		// cast the value's type to its underlying type
 		underlying := *value.Value.(*[]*BinaryTypedValue)
 		value.Value = &underlying
@@ -360,7 +360,7 @@ func defaultValuePtrOf(valueType BinaryType) any {
 	case BT_CHAR:
 		zero := rune(0)
 		return &zero
-	case BT_ARRAY:
+	case BT_LIST:
 		zero := []*BinaryTypedValue{}
 		return &zero
 	case BT_NOTYPE:

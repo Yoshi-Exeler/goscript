@@ -7,7 +7,7 @@ linters-settings:
     min-occurrences: 3
   gocritic:
     enabled-tags:
-      - diagnostic 
+      - diagnostic
       - performance
       - style
     disabled-checks:
@@ -17,39 +17,39 @@ linters-settings:
       - whyNoLint
 
 linters:
- enable-all: true
- disable:
-   # deprecated
-   - 'maligned'
-   - 'nosnakecase'
-   - 'exhaustivestruct'
-   - 'interfacer'
-   - 'scopelint'
-   - 'golint'
-   - 'structcheck'
-   - 'varcheck'
-   - 'deadcode'
-   - 'ifshort'
-   # i dissagree with these / too many false-positives
-   - 'dupl'
-   - 'tagliatelle'
-   - 'gomnd'
-   - 'varnamelen'
-   - 'goerr113'
-   - 'nlreturn'
-   - 'gochecknoglobals'
-   - 'exhaustruct'
-   - 'cyclop'
-   - 'errorlint'
-   - 'wsl'
-   - 'lll' # way too trigger happy
-   - 'revive'
-   - 'godot' # required comments to end in a dot
-   - 'gci'
-   - 'funlen' # way too trigger happy
-   - 'forbidigo' # does not allow the use of fmt.Print
-   - 'stylecheck' # requires all comments to start with the name of the thing that is being commented
-   - 'wrapcheck' # requires the use of error wrapping
+  enable-all: true
+  disable:
+    # deprecated
+    - "maligned"
+    - "nosnakecase"
+    - "exhaustivestruct"
+    - "interfacer"
+    - "scopelint"
+    - "golint"
+    - "structcheck"
+    - "varcheck"
+    - "deadcode"
+    - "ifshort"
+    # i dissagree with these / too many false-positives
+    - "dupl"
+    - "tagliatelle"
+    - "gomnd"
+    - "varnamelen"
+    - "goerr113"
+    - "nlreturn"
+    - "gochecknoglobals"
+    - "exhaustruct"
+    - "cyclop"
+    - "errorlint"
+    - "wsl"
+    - "lll" # way too trigger happy
+    - "revive"
+    - "godot" # required comments to end in a dot
+    - "gci"
+    - "funlen" # way too trigger happy
+    - "forbidigo" # does not allow the use of fmt.Print
+    - "stylecheck" # requires all comments to start with the name of the thing that is being commented
+    - "wrapcheck" # requires the use of error wrapping
 
 run:
   timeout: 5s

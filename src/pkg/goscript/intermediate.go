@@ -10,12 +10,11 @@ type IntermediateProgram struct {
 type Kind byte
 
 const (
-	SINGULAR = 1
-	ARRAY    = 2
+	SINGULAR    = 1
+	COMPOSITION = 2
 )
 
 type IntermediateType struct {
-	Kind    Kind
 	Type    BinaryType
 	SubType *IntermediateType
 }

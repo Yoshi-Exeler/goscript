@@ -99,7 +99,7 @@ func parseFunction(fnc UnparsedFunction) *FunctionDefinition {
 	}
 	// parse the return type if the function has one
 	if len(fnc.Returns) > 0 {
-		ret.Returns = parseTypeToken(fnc.Returns, true)
+		ret.Returns = realizeTypeToken(fnc.Returns, true)
 	}
 	// finally, parse the body of the function
 	ret.Operations = parseFunctionBody(fnc.Body)
@@ -707,7 +707,7 @@ func parseLetLine(line string) IntermediateOperation {
 	// assign the symbol name to arg0
 	ret.Args[0] = matches[1]
 	// get the type of the symbol and assign it to arg1
-	parsedType := parseTypeToken(matches[2], false)
+	parsedType := realizeTypeToken(matches[2], false)
 	ret.Args[1] = parsedType
 	// if there is a G3 match save it, otherwise determine the default value for this type
 	if len(matches) == 4 {
@@ -743,7 +743,7 @@ func parseForLine(line string) IntermediateOperation {
 	// save the name of the iterator to arg0
 	ret.Args[0] = matches[1]
 	// parse the iterator type and save it to arg1
-	parsedType := parseTypeToken(matches[2], false)
+	parsedType := realizeTypeToken(matches[2], false)
 	ret.Args[1] = parsedType
 	// save the initial value of the iterator to arg3
 	parsedExpr := parseExpression(matches[3])
@@ -827,29 +827,41 @@ func parseClosingBracketLine() IntermediateOperation {
 	}
 }
 
-func parseTypeToken(token string, allowNoType bool) IntermediateType {
-	var ret IntermediateType
-	// first, check composition type modifiers and recusively resolve
-	if strings.HasPrefix(token, "[]") {
-		trim := strings.TrimPrefix(token, "[]")
-		subType := parseTypeToken(trim, allowNoType)
-		// abort the cascade down the three if we encounter a NOTYPE
-		if subType.Type == BT_NOTYPE {
-			ret.Type = BT_NOTYPE
-			ret.Kind = SINGULAR
-			return ret
-		}
-		ret.SubType = &subType
-		ret.Kind = ARRAY
-		return ret
+var compositions = map[*regexp.Regexp]BinaryType{
+	regexp.MustCompile(`(?m)^List<(.*)>$`):   BT_LIST,
+	regexp.MustCompile(`(?m)^Vector<(.*)>$`): BT_VECTOR,
+	regexp.MustCompile(`(?m)^Tensor<(.*)>$`): BT_TENSOR,
+	regexp.MustCompile(`(?m)^Map<(.*)>$`):    BT_MAP,
+	regexp.MustCompile(`(?m)^\*(.*)$`):       BT_POINTER,
+}
+
+// realizeTypeToken parses infinite depth type compositions into a type tree
+func realizeTypeToken(token string, allowNoType bool) IntermediateType {
+	// if the token we were called on has length 0, return here
+	if len(token) == 0 && !allowNoType {
+		panic("type expected but got empty string")
 	}
+	// initialize the current token
+	currentToken := IntermediateType{}
+	// try to parse the top level of the type expression as a composition
+	for pattern, binaryType := range compositions {
+		match := pattern.FindString(token)
+		if len(match) != 0 {
+			// if this pattern matched, perform a replacement on the token and decend one level
+			currentToken.Type = binaryType
+			child := realizeTypeToken(pattern.ReplaceAllString(token, "$1"), allowNoType)
+			currentToken.SubType = &child
+			return currentToken
+		}
+	}
+	// if we reached this part of the code we no longer have a composition, so
+	// just try to realize the remaining token as a singular
 	singularType := singularTokenToSingular(token)
 	if singularType == BT_NOTYPE && !allowNoType {
-		panic(fmt.Sprintf("encountered invalid type %v", token))
+		panic(fmt.Sprintf("singular type expected but got '%v'", token))
 	}
-	ret.Type = singularType
-	ret.Kind = SINGULAR
-	return ret
+	currentToken.Type = singularType
+	return currentToken
 }
 
 func singularTokenToSingular(returns string) BinaryType {
@@ -901,7 +913,7 @@ func parseArguments(args string) []IntermediateVar {
 		}
 		current := IntermediateVar{
 			Name: words[0],
-			Type: parseTypeToken(words[1], false),
+			Type: realizeTypeToken(words[1], false),
 		}
 		ret = append(ret, current)
 	}

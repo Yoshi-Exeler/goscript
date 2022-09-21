@@ -15,10 +15,11 @@ type Program struct {
 }
 
 func (p *Program) Encode(out string) {
-	f, err := os.OpenFile(out, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.OpenFile(out, os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	gob.Register(BT_ANY)
 	gob.Register(Expression{})
 	gob.Register([]*BinaryTypedValue{})
@@ -34,7 +35,7 @@ func (p *Program) EncodeBSON(out string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = os.WriteFile(out, buff, 0644)
+	err = os.WriteFile(out, buff, 0600)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -170,7 +171,7 @@ func (bv *BinaryTypedValue) String() string {
 		return fmt.Sprint(*bv.Value.(*bool))
 	case BT_CHAR:
 		return fmt.Sprintf("%q", *bv.Value.(*rune))
-	case BT_ARRAY:
+	case BT_LIST:
 		return "[...]"
 	case BT_EXPRESSION:
 		return fmt.Sprintf(bv.Value.(*Expression).String())
@@ -289,9 +290,13 @@ const (
 	BT_ANY        BinaryType = 14
 	BT_STRUCT     BinaryType = 15
 	BT_BOOLEAN    BinaryType = 16
-	BT_ARRAY      BinaryType = 17
+	BT_LIST       BinaryType = 17
 	BT_NOTYPE     BinaryType = 18
 	BT_EXPRESSION BinaryType = 19
+	BT_VECTOR     BinaryType = 20
+	BT_TENSOR     BinaryType = 21
+	BT_MAP        BinaryType = 22
+	BT_POINTER    BinaryType = 23
 )
 
 func (b BinaryType) String() string {
@@ -328,7 +333,7 @@ func (b BinaryType) String() string {
 		return "STRUCT"
 	case BT_BOOLEAN:
 		return "BOOLEAN"
-	case BT_ARRAY:
+	case BT_LIST:
 		return "ARRAY"
 	default:
 		return "invalid type"
@@ -489,7 +494,7 @@ func NewArrayExpression(elements []*BinaryTypedValue) *Expression {
 	return &Expression{
 		Value: &BinaryTypedValue{
 			Value: &elements,
-			Type:  BT_ARRAY,
+			Type:  BT_LIST,
 		},
 		Operator:        BO_CONSTANT,
 		LeftExpression:  nil,

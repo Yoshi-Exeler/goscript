@@ -13,3 +13,13 @@ func expectValue[T comparable](value T, expectedValue T) {
 		panic(fmt.Sprintf("assertion failed expected %v but got %v", value, expectedValue))
 	}
 }
+
+func expectPanic(handler func()) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			panic("expected panic while executing handler but the handler ran successfully")
+		}
+	}()
+	handler()
+}

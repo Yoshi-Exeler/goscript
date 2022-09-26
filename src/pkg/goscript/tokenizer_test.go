@@ -6,13 +6,37 @@ import (
 )
 
 func TestRealizeTypeToken(t *testing.T) {
-
-	typeExpr := realizeTypeToken("List<List<*Tensor<float32>>>", false)
+	typeExpr := parseTypeWithConstraint("List<List<*Tensor<float32>>>", VALID_TYPE)
 	expectValue(typeExpr.Type, BT_LIST)
-	expectValue(typeExpr.SubType.Type, BT_LIST)
-	expectValue(typeExpr.SubType.SubType.Type, BT_POINTER)
-	expectValue(typeExpr.SubType.SubType.SubType.Type, BT_TENSOR)
-	expectValue(typeExpr.SubType.SubType.SubType.SubType.Type, BT_FLOAT32)
+	expectValue(typeExpr.ValueType.Type, BT_LIST)
+	expectValue(typeExpr.ValueType.ValueType.Type, BT_POINTER)
+	expectValue(typeExpr.ValueType.ValueType.ValueType.Type, BT_TENSOR)
+	expectValue(typeExpr.ValueType.ValueType.ValueType.ValueType.Type, BT_FLOAT32)
+}
+
+func TestRealizeInvalidTypeNumeric(t *testing.T) {
+	expectPanic(func() {
+		_ = parseTypeWithConstraint("Vector<string>", VALID_TYPE)
+	})
+}
+
+func TestRealizeInvalidTypeUncomposed(t *testing.T) {
+	expectPanic(func() {
+		_ = parseTypeWithConstraint("Vector<List<float32>>", VALID_TYPE)
+	})
+}
+
+func TestRealizeInvalidTypeWhenAcceptable(t *testing.T) {
+	_ = parseTypeWithConstraint("cfsdf>", UNCONSTRAINED)
+}
+
+func TestRealizePointerChain(t *testing.T) {
+	pointerChain := parseTypeWithConstraint("****uint64", VALID_TYPE)
+	expectValue(pointerChain.Type, BT_POINTER)
+	expectValue(pointerChain.ValueType.Type, BT_POINTER)
+	expectValue(pointerChain.ValueType.ValueType.Type, BT_POINTER)
+	expectValue(pointerChain.ValueType.ValueType.ValueType.Type, BT_POINTER)
+	expectValue(pointerChain.ValueType.ValueType.ValueType.ValueType.Type, BT_UINT64)
 }
 
 func TestParseExprAddition(t *testing.T) {
@@ -126,13 +150,11 @@ func TestParseExprSimpleBrackets(t *testing.T) {
 }
 
 func TestParseFunctionCall(t *testing.T) {
-
 	expr := parseExpression(`test(5*7+1)`)
 	fmt.Printf("%+v\n", expr.Value.Value)
 }
 
 func TestParseSymbolExpression(t *testing.T) {
-
 	expr := parseExpression(`myVar`)
 	fmt.Printf("%+v\n", expr.Value.Value)
 }

@@ -15,8 +15,10 @@ const (
 )
 
 type IntermediateType struct {
-	Type    BinaryType
-	SubType *IntermediateType
+	Type       BinaryType
+	KeyType    *IntermediateType
+	ValueType  *IntermediateType
+	IsComposed bool
 }
 
 type IntermediateVar struct {

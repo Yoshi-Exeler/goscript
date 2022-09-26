@@ -1,5 +1,5 @@
 import "std/crypto"
 
-func getSomeJWT() => uint64 {
+func getSomeJWT() => u64 {
 return 1
 }

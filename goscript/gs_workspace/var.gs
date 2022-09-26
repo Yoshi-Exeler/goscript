@@ -1,7 +1,7 @@
 application var
 
 func main() {
-    let x: string = "hello world"
+    let x: str = "hello world"
     print(x)
     x = "byebye"
     print(x)

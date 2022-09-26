@@ -858,30 +858,32 @@ func parseClosingBracketLine() IntermediateOperation {
 
 func parseSigularType(returns string) BinaryType {
 	switch clean(returns) {
-	case "int8":
+	case "i8":
 		return BT_INT8
-	case "int16":
+	case "i16":
 		return BT_INT16
-	case "int32":
+	case "i32":
 		return BT_INT32
-	case "int64":
+	case "i64":
 		return BT_INT64
-	case "uint8":
+	case "u8":
 		return BT_UINT8
-	case "uint16":
+	case "u16":
 		return BT_UINT16
-	case "uint32":
+	case "u32":
 		return BT_UINT32
-	case "uint64":
+	case "u64":
 		return BT_UINT64
 	case "byte":
 		return BT_BYTE
-	case "float32":
+	case "f32":
 		return BT_FLOAT32
-	case "float64":
+	case "f64":
 		return BT_FLOAT64
-	case "string":
+	case "str":
 		return BT_STRING
+	case "char":
+		return BT_CHAR
 	case "bool":
 		return BT_BOOLEAN
 	}

@@ -6,7 +6,7 @@ import (
 )
 
 func TestRealizeTypeToken(t *testing.T) {
-	typeExpr := parseTypeWithConstraint("List<List<*Tensor<float32>>>", VALID_TYPE)
+	typeExpr := parseTypeWithConstraint("List<List<*Tensor<f32>>>", VALID_TYPE)
 	expectValue(typeExpr.Type, BT_LIST)
 	expectValue(typeExpr.ValueType.Type, BT_LIST)
 	expectValue(typeExpr.ValueType.ValueType.Type, BT_POINTER)
@@ -16,13 +16,13 @@ func TestRealizeTypeToken(t *testing.T) {
 
 func TestRealizeInvalidTypeNumeric(t *testing.T) {
 	expectPanic(func() {
-		_ = parseTypeWithConstraint("Vector<string>", VALID_TYPE)
+		_ = parseTypeWithConstraint("Vector<str>", VALID_TYPE)
 	})
 }
 
 func TestRealizeInvalidTypeUncomposed(t *testing.T) {
 	expectPanic(func() {
-		_ = parseTypeWithConstraint("Vector<List<float32>>", VALID_TYPE)
+		_ = parseTypeWithConstraint("Vector<List<f32>>", VALID_TYPE)
 	})
 }
 
@@ -31,7 +31,7 @@ func TestRealizeInvalidTypeWhenAcceptable(t *testing.T) {
 }
 
 func TestRealizePointerChain(t *testing.T) {
-	pointerChain := parseTypeWithConstraint("****uint64", VALID_TYPE)
+	pointerChain := parseTypeWithConstraint("****u64", VALID_TYPE)
 	expectValue(pointerChain.Type, BT_POINTER)
 	expectValue(pointerChain.ValueType.Type, BT_POINTER)
 	expectValue(pointerChain.ValueType.ValueType.Type, BT_POINTER)

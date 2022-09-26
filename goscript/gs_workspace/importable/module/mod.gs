@@ -1,4 +1,4 @@
 
-func EPrint(t: string) {
+func EPrint(t: str) {
     print(t)
 }

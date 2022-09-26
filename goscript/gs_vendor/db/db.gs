@@ -1,4 +1,4 @@
-func doSomeDBStuff() => uint64 {
+func doSomeDBStuff() => u64 {
 return 0
 }
 

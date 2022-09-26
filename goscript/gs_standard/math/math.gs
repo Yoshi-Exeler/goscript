@@ -1,3 +1,3 @@
-func add(a: uint64, b: uint64) => uint64 {
+func add(a: u64, b: u64) => u64 {
 return a + b
 }

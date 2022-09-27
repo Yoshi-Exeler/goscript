@@ -167,13 +167,19 @@ func (c *Compiler) resolveCalls(expr *Expression) *Expression {
 		expr.Operator = BO_FUNCTION_CALL
 		// check if we have a base address for this function
 		if c.funcBaseByName[expr.Value.Value.(*FunctionCallPlaceholder).Name] == 0 {
-			// if not base exists for this function, check our known functions
-			sideFunc := c.funcsByName[expr.Value.Value.(*FunctionCallPlaceholder).Name]
-			if sideFunc == nil {
-				panic(fmt.Sprintf("cannot call undefined function %v", expr.Value.Value.(*FunctionCallPlaceholder).Name))
+			// check if this is a builtin
+			if builtins[expr.Value.Value.(*FunctionCallPlaceholder).Name] != 0 {
+				expr.Operator = BO_BUILTIN_CALL
+				expr.Ref = int(builtins[expr.Value.Value.(*FunctionCallPlaceholder).Name])
+			} else {
+				// if not base exists for this function, check our known functions
+				sideFunc := c.funcsByName[expr.Value.Value.(*FunctionCallPlaceholder).Name]
+				if sideFunc == nil {
+					panic(fmt.Sprintf("cannot call undefined function %v", expr.Value.Value.(*FunctionCallPlaceholder).Name))
+				}
+				expr.Ref = c.funcBaseByName[expr.Value.Value.(*FunctionCallPlaceholder).Name]
 			}
 		}
-		expr.Ref = c.funcBaseByName[expr.Value.Value.(*FunctionCallPlaceholder).Name]
 	}
 	if expr.LeftExpression != nil {
 		expr.LeftExpression = c.resolveCalls(expr.LeftExpression)
@@ -228,6 +234,7 @@ func (c *Compiler) generateAssign(op *IntermediateOperation) {
 }
 
 func (c *Compiler) prescanFunction(def *FunctionDefinition) {
+	fmt.Printf("SCAN_FUNC::%+v\n", def)
 	// scan the parameters
 	for _, param := range def.Accepts {
 		param := param
@@ -278,11 +285,35 @@ func (c *Compiler) prescanFunction(def *FunctionDefinition) {
 	}
 }
 
+var builtins = map[string]BuiltinFunction{
+	"input":   BF_INPUT,
+	"inputln": BF_INPUTLN,
+	"len":     BF_LEN,
+	"max":     BF_MAX,
+	"min":     BF_MIN,
+	"print":   BF_PRINT,
+	"printf":  BF_PRINTF,
+	"println": BF_PRINTLN,
+	"byte":    BF_TOBYTE,
+	"i8":      BF_TOINT8,
+	"i16":     BF_TOINT16,
+	"i32":     BF_TOINT32,
+	"i64":     BF_TOINT64,
+	"u8":      BF_TOUINT8,
+	"u16":     BF_TOUINT16,
+	"u32":     BF_TOUINT32,
+	"u64":     BF_TOUINT64,
+	"f32":     BF_TOFLOAT32,
+	"f64":     BF_TOFLOAT64,
+	"char":    BF_TOCHAR,
+	"str":     BF_TOSTRING,
+}
+
 func (c *Compiler) scanExpression(expr *Expression) {
 	if expr.Operator == BO_FUNCTION_CALL_PLACEHOLDER {
 		wasKnown := c.calledFunctionByName[expr.Value.Value.(*FunctionCallPlaceholder).Name]
 		c.calledFunctionByName[expr.Value.Value.(*FunctionCallPlaceholder).Name] = true
-		if !wasKnown {
+		if !wasKnown && builtins[expr.Value.Value.(*FunctionCallPlaceholder).Name] == 0 {
 			c.prescanFunction(c.funcsByName[expr.Value.Value.(*FunctionCallPlaceholder).Name])
 		}
 	}

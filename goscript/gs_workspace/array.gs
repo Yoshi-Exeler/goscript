@@ -1,7 +1,7 @@
 application array
 
 func main() {
-    let x: []str = []
+    let x: List<str> = []
     x = ["one","two","three"]
     print(x[0])
     print(x[1])

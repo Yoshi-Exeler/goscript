@@ -737,6 +737,8 @@ func parseLetLine(line string) IntermediateOperation {
 	// assign the symbol name to arg0
 	ret.Args[0] = matches[1]
 	// get the type of the symbol and assign it to arg1
+	fmt.Printf("PT_CONST::'%v'\n", matches[2])
+	fmt.Printf("LINE::'%v'\n", line)
 	parsedType := parseTypeWithConstraint(matches[2], VALID_TYPE)
 	ret.Args[1] = parsedType
 	// if there is a G3 match save it, otherwise determine the default value for this type

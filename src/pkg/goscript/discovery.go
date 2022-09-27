@@ -108,7 +108,7 @@ func discoverSources(mainPath string, workspace string) (*ApplicationSource, err
 		return nil, fmt.Errorf("could not read main application file with error %v", err)
 	}
 	// stip comments
-	mainContent = []byte(stripComments(string(mainContent)))
+	mainContent = []byte(stripComments(trimWhitespace(string(mainContent))))
 	// declare app source
 	src := &ApplicationSource{
 		ApplicationFile: SourceFile{
@@ -212,7 +212,7 @@ func recAddModule(path string, importPath string, name string, out map[string]*M
 			return fmt.Errorf("cannot read source file %v with error %v", filepath.Join(path, entry.Name()), err)
 		}
 		// stip comments
-		content = []byte(stripComments(string(content)))
+		content = []byte(stripComments(trimWhitespace(string(content))))
 		// otherwise, we add this entry to the file list
 		this.Files = append(this.Files, SourceFile{
 			Path:    filepath.Join(path, entry.Name()),

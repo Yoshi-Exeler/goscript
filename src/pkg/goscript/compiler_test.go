@@ -1,18 +1,15 @@
 package goscript
 
 import (
-	"encoding/gob"
-	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"testing"
 )
 
-func TestCompileSimple(t *testing.T) {
+func TestCompileImports(t *testing.T) {
 	compiler := NewCompiler()
-	prog, err := compiler.Compile(CompileJob{
-		MainFilePath:       filepath.Join(TESTS, "externals.gs"),
+	_, err := compiler.Compile(CompileJob{
+		MainFilePath:       filepath.Join(TESTS, "imports.gs"),
 		LocalWorkspaceRoot: TESTS,
 		VendorPath:         VENDORPATH,
 		StandardLibPath:    STDPATH,
@@ -20,30 +17,43 @@ func TestCompileSimple(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	f, _ := os.OpenFile("./externals.gob", os.O_RDWR, 0600)
-	enc := gob.NewEncoder(f)
-	enc.Encode(prog)
-	f.Close()
-	fmt.Println(prog.String())
 }
 
-// func TestCompileHelloWorld(t *testing.T) {
-//
-// 	compiler := NewCompiler()
-// 	prog, err := compiler.Compile(CompileJob{
-// 		MainFilePath:       filepath.Join(TESTS, "hello.gs"),
-// 		LocalWorkspaceRoot: TESTS,
-// 		VendorPath:         VENDORPATH,
-// 		StandardLibPath:    STDPATH,
-// 	})
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	fmt.Println(prog.String())
-// 	rt := NewRuntime()
-// 	val := rt.Exec(*prog)
-// 	conv := *val.(*BinaryTypedValue).Value.(*string)
-// 	if conv != "Hello World" {
-// 		t.Fatalf("failed to run hello world, expected 'Hello World' but got '%v'", conv)
-// 	}
-// }
+func TestCompileArray(t *testing.T) {
+	compiler := NewCompiler()
+	_, err := compiler.Compile(CompileJob{
+		MainFilePath:       filepath.Join(TESTS, "array.gs"),
+		LocalWorkspaceRoot: TESTS,
+		VendorPath:         VENDORPATH,
+		StandardLibPath:    STDPATH,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func TestCompileHello(t *testing.T) {
+	compiler := NewCompiler()
+	_, err := compiler.Compile(CompileJob{
+		MainFilePath:       filepath.Join(TESTS, "hello.gs"),
+		LocalWorkspaceRoot: TESTS,
+		VendorPath:         VENDORPATH,
+		StandardLibPath:    STDPATH,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func TestCompileTypecast(t *testing.T) {
+	compiler := NewCompiler()
+	_, err := compiler.Compile(CompileJob{
+		MainFilePath:       filepath.Join(TESTS, "typecast.gs"),
+		LocalWorkspaceRoot: TESTS,
+		VendorPath:         VENDORPATH,
+		StandardLibPath:    STDPATH,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}

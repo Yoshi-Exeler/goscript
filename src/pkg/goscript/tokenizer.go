@@ -2,7 +2,6 @@ package goscript
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -149,6 +148,7 @@ func parseFunctionBody(body string) []*IntermediateOperation {
 }
 
 func parseLine(line string) IntermediateOperation {
+	line = strings.TrimSpace(line)
 	tokens := strings.Split(line, " ")
 	// if this line is empty return a no-op which we will delete later in optimization
 	if len(tokens) == 0 || len(deleteWhitespace(line)) == 0 {
@@ -193,6 +193,7 @@ func parseKeyWordLine(line string, keyword string) IntermediateOperation {
 }
 
 func parseExpressionLine(line string) IntermediateOperation {
+	fmt.Printf("line::%v\n", line)
 	return IntermediateOperation{
 		Type: IM_EXPRESSION,
 		Args: []any{parseExpression(line)},
@@ -688,10 +689,10 @@ func tokenizeExpression(expr string) []ExpressionToken {
 		lastChunkIsOp = false
 	}
 	if inString {
-		log.Fatalf("invalid expression. string was not terminated. expr: %v", expr)
+		panic(fmt.Sprintf("invalid expression. string was not terminated. expr: %v", expr))
 	}
 	if lastChunkIsOp {
-		log.Fatalf("invalid expression. expression cannot end with an operator. expr: %v", expr)
+		panic(fmt.Sprintf("invalid expression. expression cannot end with an operator. expr: %v", expr))
 	}
 	newTokens := []ExpressionToken{}
 	for idx, token := range res {

@@ -8,4 +8,6 @@ func main() {
     print(x[2])
     x[0] = "four"
     print(x[0])
+    x += "five"
+    print(x[4])
 }

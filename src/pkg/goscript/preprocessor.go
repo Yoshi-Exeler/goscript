@@ -1,9 +1,11 @@
 package goscript
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -13,7 +15,7 @@ var STRUCT_NAME_REGEX = regexp.MustCompile(`(?m)struct (.*) {`)
 var FUNC_NAME_REGEX = regexp.MustCompile(`(?m)func (.*)\(`)
 
 // this regex matches any access to an external properties (for example db.Connect() will match with CG1 being the module name and CG2 being the property)
-var EXTERNAL_SYMBOL_REGEX = regexp.MustCompile(`(?m)[^a-zA-Z0-9]{1}((?:[a-zA-Z]{1}[a-zA-Z0-9]?)*)\.((?:[a-zA-Z]{1}[a-zA-Z0-9]?)*)`)
+var EXTERNAL_SYMBOL_REGEX = regexp.MustCompile(`(?m)((?:[a-zA-Z]{1}[a-zA-Z0-9]?)*)\.((?:[a-zA-Z]{1}[a-zA-Z0-9]?)*)`)
 
 var SIMPLE_STRING_REGEX = regexp.MustCompile(`(?mU)".*[^\\]"`)
 
@@ -75,12 +77,25 @@ func generateFQSC(source *ApplicationSource) (string, error) {
 var APPLICATION_REGEX = regexp.MustCompile(`(?m)application (.*)$`)
 var EMPTY_LINE_REGEX = regexp.MustCompile(`(?m)^\n`)
 
+func trimWhitespace(code string) string {
+	lines := strings.Split(code, "\n")
+	ret := bytes.NewBuffer([]byte{})
+	for idx, line := range lines {
+		ret.Write([]byte(strings.TrimSpace(line)))
+		if idx != len(lines)-1 {
+			ret.Write([]byte("\n"))
+		}
+	}
+	return ret.String()
+}
+
 func fixReferences(source string, module *ModuleSource, modules []*ModuleSource) (string, error) {
 	// get the string mask for the source code
 	sourceMask := getStringMask(source)
 	// get both index and full matches of symbols in the source code
 	symbolIndexMatches := EXTERNAL_SYMBOL_REGEX.FindAllStringIndex(source, -1)
 	fullMatches := EXTERNAL_SYMBOL_REGEX.FindAllStringSubmatch(source, -1)
+	delta := 0
 	for i := 0; i < len(symbolIndexMatches); i++ {
 		// skip matches that are inside of a string
 		if sourceMask[symbolIndexMatches[i][0]] {
@@ -104,7 +119,8 @@ func fixReferences(source string, module *ModuleSource, modules []*ModuleSource)
 		}
 		// generate the new symbol to replace the current one
 		newSymbol := fmt.Sprintf("fn_%v_%v_%v", targetModule.Hash, targetModule.Name, fullMatches[i][2])
-		source = source[:symbolIndexMatches[i][0]] + newSymbol + source[symbolIndexMatches[i][1]:]
+		source = source[:symbolIndexMatches[i][0]+delta] + newSymbol + source[symbolIndexMatches[i][1]+delta:]
+		delta += len(newSymbol) - (symbolIndexMatches[i][1] - symbolIndexMatches[i][0])
 	}
 	return source, nil
 }
@@ -115,6 +131,7 @@ func fixMainFileReferences(source string, file *SourceFile, modules []*ModuleSou
 	// get both index and full matches of symbols in the source code
 	symbolIndexMatches := EXTERNAL_SYMBOL_REGEX.FindAllStringIndex(source, -1)
 	fullMatches := EXTERNAL_SYMBOL_REGEX.FindAllStringSubmatch(source, -1)
+	delta := 0
 	for i := 0; i < len(symbolIndexMatches); i++ {
 		// skip matches that are inside of a string
 		if sourceMask[symbolIndexMatches[i][0]] {
@@ -139,7 +156,8 @@ func fixMainFileReferences(source string, file *SourceFile, modules []*ModuleSou
 		}
 		// generate the new symbol to replace the current one
 		newSymbol := fmt.Sprintf("fn_%v_%v_%v", targetModule.Hash, targetModule.Name, fullMatches[i][2])
-		source = source[:symbolIndexMatches[i][0]+1] + newSymbol + source[symbolIndexMatches[i][1]:]
+		source = source[:symbolIndexMatches[i][0]+delta] + newSymbol + source[symbolIndexMatches[i][1]+delta:]
+		delta += len(newSymbol) - (symbolIndexMatches[i][1] - symbolIndexMatches[i][0])
 	}
 	return source, nil
 }

@@ -10,12 +10,10 @@ import (
 )
 
 // this package will contain the preprocessor for goscript
-
-var STRUCT_NAME_REGEX = regexp.MustCompile(`(?m)struct (.*) {`)
-var FUNC_NAME_REGEX = regexp.MustCompile(`(?m)func (.*)\(`)
+var FUNC_NAME_REGEX = regexp.MustCompile(`(?mU)func ([^#]*)\(`)
 
 // this regex matches any access to an external properties (for example db.Connect() will match with CG1 being the module name and CG2 being the property)
-var EXTERNAL_SYMBOL_REGEX = regexp.MustCompile(`(?m)((?:[a-zA-Z]{1}[a-zA-Z0-9]?)*)\.((?:[a-zA-Z]{1}[a-zA-Z0-9]?)*)`)
+var EXTERNAL_SYMBOL_REGEX = regexp.MustCompile(`(?m)((?:[a-zA-Z#]{1}[a-zA-Z0-9]?)*)\.((?:[a-zA-Z]{1}[a-zA-Z0-9]?)*)`)
 
 var SIMPLE_STRING_REGEX = regexp.MustCompile(`(?mU)".*[^\\]"`)
 
@@ -44,7 +42,7 @@ func generateFQSC(source *ApplicationSource) (string, error) {
 			mod.Content += file.Content
 		}
 		mod.Content = stripDirectives(mod.Content)
-		mod.Content = prefixSymbolNames(mod.Content, mod.Hash, mod.Name)
+		mod.Content = prefixFunctions(mod.Content, mod.Hash, mod.Name)
 		fqsc, err := fixReferences(mod.Content, mod, source.Modules)
 		if err != nil {
 			return "", fmt.Errorf("failed to fix references for module %v with error %v", mod.ImportPath, err)
@@ -57,6 +55,8 @@ func generateFQSC(source *ApplicationSource) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to fix references for main file with error %v", err)
 	}
+	// mark all functions in the main file with a > so the parser can scan them
+	fqsc = prefixFunctions(fqsc, "0", "main")
 	source.ApplicationFile.Content = fqsc
 	fmt.Println("[GSC][genFQSC] main stripped, main symbols normalized, merging now")
 	// now we just merge all the sources and return them
@@ -118,7 +118,7 @@ func fixReferences(source string, module *ModuleSource, modules []*ModuleSource)
 			return "", fmt.Errorf("imported module %v not found in local modules", fullMatches[i][1])
 		}
 		// generate the new symbol to replace the current one
-		newSymbol := fmt.Sprintf("fn_%v_%v_%v", targetModule.Hash, targetModule.Name, fullMatches[i][2])
+		newSymbol := fmt.Sprintf("#fn_%v_%v_%v", targetModule.Hash, targetModule.Name, fullMatches[i][2])
 		source = source[:symbolIndexMatches[i][0]+delta] + newSymbol + source[symbolIndexMatches[i][1]+delta:]
 		delta += len(newSymbol) - (symbolIndexMatches[i][1] - symbolIndexMatches[i][0])
 	}
@@ -155,7 +155,7 @@ func fixMainFileReferences(source string, file *SourceFile, modules []*ModuleSou
 			return "", fmt.Errorf("imported module %v not found in local modules", fullMatches[i][1])
 		}
 		// generate the new symbol to replace the current one
-		newSymbol := fmt.Sprintf("fn_%v_%v_%v", targetModule.Hash, targetModule.Name, fullMatches[i][2])
+		newSymbol := fmt.Sprintf("#fn_%v_%v_%v", targetModule.Hash, targetModule.Name, fullMatches[i][2])
 		source = source[:symbolIndexMatches[i][0]+delta] + newSymbol + source[symbolIndexMatches[i][1]+delta:]
 		delta += len(newSymbol) - (symbolIndexMatches[i][1] - symbolIndexMatches[i][0])
 	}
@@ -179,11 +179,36 @@ func getStringMask(source string) []bool {
 	return mask
 }
 
-func prefixSymbolNames(source string, prefix string, name string) string {
-	// find all struct definitions
-	stepOne := STRUCT_NAME_REGEX.ReplaceAllString(source, fmt.Sprintf("struct st_%v_%v_$1 {", prefix, name))
-	stepTwo := FUNC_NAME_REGEX.ReplaceAllString(stepOne, fmt.Sprintf(">\nfunc fn_%v_%v_$1(", prefix, name))
-	return stepTwo
+func prefixFunctions(source string, prefix string, name string) string {
+	// first, build a replacement dictionary for all the replacements we are about to perform
+	replacements := make(map[string]string)
+	matches := FUNC_NAME_REGEX.FindAllStringSubmatch(source, -1)
+	for _, match := range matches {
+		replacements[match[1]] = fmt.Sprintf("#fn_%v_%v_%v", prefix, name, match[1])
+	}
+	// perform the replacements
+	source = FUNC_NAME_REGEX.ReplaceAllString(source, fmt.Sprintf(">\nfunc #fn_%v_%v_$1(", prefix, name))
+	// now fix all calls to the replaced function
+	// now match against calls to the functions
+	for oldName, newName := range replacements {
+		// first get a string mask
+		mask := getStringMask(source)
+		// compile a regex for the calls to the old name
+		oldNameRegex := regexp.MustCompile(`[^._]` + oldName + `\(`)
+		// match for the regex both by index and by full match
+		indexMatches := oldNameRegex.FindAllStringIndex(source, -1)
+		delta := 0
+		for i := 0; i < len(indexMatches); i++ {
+			// skip matches that are inside of a string
+			if mask[indexMatches[i][0]+1] {
+				continue
+			}
+			// generate the new symbol to replace the current one
+			source = source[:indexMatches[i][0]+delta+1] + newName + "(" + source[indexMatches[i][1]+delta:]
+			delta += len(newName+"(") - (indexMatches[i][1] - indexMatches[i][0] + 1)
+		}
+	}
+	return source
 }
 
 func stripDirectives(source string) string {

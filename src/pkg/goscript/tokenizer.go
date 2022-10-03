@@ -77,7 +77,7 @@ func parse(source string) *IntermediateProgram {
 	startParseFuncs := time.Now()
 	parsedFunctions := []*FunctionDefinition{}
 	for _, function := range functions {
-		if function.Name != "main" {
+		if function.Name != "#fn_0_main_main" {
 			parsedFunctions = append(parsedFunctions, parseFunction(function))
 		}
 	}
@@ -193,7 +193,6 @@ func parseKeyWordLine(line string, keyword string) IntermediateOperation {
 }
 
 func parseExpressionLine(line string) IntermediateOperation {
-	fmt.Printf("line::%v\n", line)
 	return IntermediateOperation{
 		Type: IM_EXPRESSION,
 		Args: []any{parseExpression(line)},
@@ -313,8 +312,9 @@ func generateExpressionTree(cnode *ExpressionTreeNode, nodes map[uint64]*Express
 }
 
 type FunctionCallPlaceholder struct {
-	Name string
-	Args *Expression
+	Name       string
+	SymbolName []string
+	Args       []*Expression
 }
 
 func realizeFunctionCall(token ExpressionToken) *Expression {
@@ -326,7 +326,7 @@ func realizeFunctionCall(token ExpressionToken) *Expression {
 			Type: BT_NOTYPE,
 			Value: &FunctionCallPlaceholder{
 				Name: getFunctionName(token.Value),
-				Args: parseExpression(getFunctionArgs(token.Value)),
+				Args: parseArgumentExpressions(getFunctionArgs(token.Value)),
 			},
 		},
 	}
@@ -334,15 +334,27 @@ func realizeFunctionCall(token ExpressionToken) *Expression {
 
 var FUNCTION_ARG_REGEX = regexp.MustCompile(`(?m)(\(.*\))`)
 
-func getFunctionArgs(expr string) string {
-	match := FUNCTION_ARG_REGEX.FindString(expr)
-	if len(match) < 3 {
-		if strings.Contains(expr, "()") {
-			return ""
-		}
-		panic(fmt.Sprintf("invalid function call arguments %v", expr))
+var ARG_SPLIT_REGEX = regexp.MustCompile(`(?m)[\s,(]+([^,\s()]*)`)
+
+func parseArgumentExpressions(exprs []string) []*Expression {
+	res := []*Expression{}
+	for _, expr := range exprs {
+		res = append(res, parseExpression(expr))
 	}
-	return match[1 : len(match)-1]
+	return res
+}
+
+func getFunctionArgs(expr string) []string {
+	res := []string{}
+	argsMatch := FUNCTION_ARG_REGEX.FindString(expr)
+	argMatches := ARG_SPLIT_REGEX.FindAllStringSubmatch(argsMatch, -1)
+	for _, match := range argMatches {
+		if len(match) != 2 {
+			panic("invalid regex match in getFunctionArgs, this should never happen")
+		}
+		res = append(res, strings.TrimSpace(match[1]))
+	}
+	return res
 }
 
 func getFunctionName(expr string) string {
@@ -722,7 +734,7 @@ func charIsOperator(c string) bool {
 // G1 is the variable name
 // G2 is the variable type
 // G3 is the optional value that is assigned
-var LET_LINE_REGEX = regexp.MustCompile(`(?m)let ([a-zA-z_]{1}[a-zA-Z0-9-_]*): ([a-zA-Z0-9]*)(?:[ \n]= (.*))?`)
+var LET_LINE_REGEX = regexp.MustCompile(`(?m)let ([a-zA-z_]{1}[a-zA-Z0-9-_]*): ([a-zA-Z0-9<>]*)(?:[ \n]= (.*))?`)
 
 func parseLetLine(line string) IntermediateOperation {
 	ret := IntermediateOperation{
@@ -737,8 +749,6 @@ func parseLetLine(line string) IntermediateOperation {
 	// assign the symbol name to arg0
 	ret.Args[0] = matches[1]
 	// get the type of the symbol and assign it to arg1
-	fmt.Printf("PT_CONST::'%v'\n", matches[2])
-	fmt.Printf("LINE::'%v'\n", line)
 	parsedType := parseTypeWithConstraint(matches[2], VALID_TYPE)
 	ret.Args[1] = parsedType
 	// if there is a G3 match save it, otherwise determine the default value for this type
@@ -917,7 +927,7 @@ func parseArguments(args string) []IntermediateVar {
 	return ret
 }
 
-var FUNC_REGEX = regexp.MustCompile(`(?msU)func ([a-zA-Z_]{1}[a-zA-Z0-9_]*)\((.*)\) (?:=> ([a-zA-Z0-9]*) )?{\n(.*)}\n>`)
+var FUNC_REGEX = regexp.MustCompile(`(?msU)func (#[a-zA-Z_]{1}[a-zA-Z0-9_]*)\((.*)\) (?:=> ([a-zA-Z0-9]*) )?{\n(.*)}\n>`)
 
 func findFunctions(source string) ([]UnparsedFunction, UnparsedFunction) {
 	funcs := []UnparsedFunction{}
@@ -931,7 +941,7 @@ func findFunctions(source string) ([]UnparsedFunction, UnparsedFunction) {
 			Returns: match[3],
 			Body:    match[4],
 		})
-		if match[1] == "main" {
+		if match[1] == "#fn_0_main_main" {
 			mainFunc = UnparsedFunction{
 				Name:    match[1],
 				Args:    match[2],

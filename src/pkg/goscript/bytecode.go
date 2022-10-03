@@ -114,7 +114,7 @@ func (b *BinaryOperation) String() string {
 	case ASSIGN:
 		return fmt.Sprintf("ASSIGN SYM(%v) %v", b.Args[0], b.Args[1].(*Expression))
 	case INDEX_ASSIGN:
-		return fmt.Sprintf("INDEX_ASSIGN SYM(%v) IDX(%v) %v", b.Args[0], b.Args[1], b.Args[2].(*Expression))
+		return fmt.Sprintf("INDEX_ASSIGN SYM(%v) IDX(%v) %v", b.Args[0], b.Args[1].(*Expression), b.Args[2].(*Expression))
 	case BIND:
 		return fmt.Sprintf("BIND SYM(%v) %v", b.Args[0], b.Args[1].(BinaryType).String())
 	case RETURN:
@@ -440,6 +440,8 @@ func (e *Expression) String() string {
 		return fmt.Sprintf("FUNCTION_PH[%v](%v)", e.Ref, e.Args)
 	case BO_VSYMBOL_PLACEHOLDER:
 		return fmt.Sprintf("VSYMBOL_PH[%v](%v)", e.Ref, e.Args)
+	case BO_BUILTIN_CALL:
+		return fmt.Sprintf("BUILTIN_FUNC[%v](%v)", e.Ref, e.Args)
 	case BO_INDEX_INTO:
 		return fmt.Sprintf("SYM(%v)[%v]", e.Ref, e.Value.String())
 	case BO_VSYMBOL:

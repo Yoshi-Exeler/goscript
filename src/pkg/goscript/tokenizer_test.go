@@ -26,6 +26,49 @@ func TestRealizeInvalidTypeUncomposed(t *testing.T) {
 	})
 }
 
+func TestFindFunctions(t *testing.T) {
+	src := `>
+func #fn_0_main_main() {
+let a: str = "hello world"
+#fn_6be61bfd_log_logln(a)
+let b: u64 = #fn_b169da74_math_add(5,5)
+let c: u64 = #fn_b169da74_math_mult(5,5)
+return 0
+}
+>
+func #fn_6be61bfd_log_log(msg: str) {
+print(msg)
+}
+>
+func #fn_6be61bfd_log_logln(msg: str) {
+#fn_6be61bfd_log_log(msg)
+}
+>
+func #fn_b169da74_math_add(a: u64, b: u64) => u64 {
+return a + b
+}
+>
+func #fn_b169da74_math_sub(a: u64, b: u64) => u64 {
+return a - b
+}
+>
+func #fn_b169da74_math_mult(a: u64, b: u64) => u64 {
+return a * b
+}
+>
+func #fn_b169da74_math_div(a: u64, b: u64) => u64 {
+return a / b
+}
+>`
+	funcs, _ := findFunctions(src)
+	expectLength(funcs, 7, "should find seven function")
+}
+
+func TestGetFunctionArgs(t *testing.T) {
+	args := getFunctionArgs("test(a,b)")
+	expectLength(args, 2, "when parsing a call with two args, two args should be found")
+}
+
 func TestRealizeInvalidTypeWhenAcceptable(t *testing.T) {
 	_ = parseTypeWithConstraint("cfsdf>", UNCONSTRAINED)
 }

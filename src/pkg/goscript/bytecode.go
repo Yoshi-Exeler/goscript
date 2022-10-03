@@ -171,6 +171,8 @@ func (bv *BinaryTypedValue) String() string {
 		return fmt.Sprint(*bv.Value.(*bool))
 	case BT_CHAR:
 		return fmt.Sprintf("%q", *bv.Value.(*rune))
+	case BT_NULL:
+		return "NULL"
 	case BT_LIST:
 		return "[...]"
 	case BT_EXPRESSION:
@@ -297,6 +299,7 @@ const (
 	BT_TENSOR     BinaryType = 21
 	BT_MAP        BinaryType = 22
 	BT_POINTER    BinaryType = 23
+	BT_NULL       BinaryType = 24
 )
 
 func (b BinaryType) String() string {
@@ -364,6 +367,7 @@ const (
 	BO_FUNCTION_CALL_PLACEHOLDER BinaryOperator = 14
 	BO_VSYMBOL_PLACEHOLDER       BinaryOperator = 15
 	BO_BUILTIN_CALL              BinaryOperator = 16
+	BO_NULLEXPR                  BinaryOperator = 17
 )
 
 func (b BinaryOperator) String() string {
@@ -442,6 +446,8 @@ func (e *Expression) String() string {
 		return fmt.Sprintf("VSYMBOL_PH[%v](%v)", e.Ref, e.Args)
 	case BO_BUILTIN_CALL:
 		return fmt.Sprintf("BUILTIN_FUNC[%v](%v)", e.Ref, e.Args)
+	case BO_NULLEXPR:
+		return "NULL"
 	case BO_INDEX_INTO:
 		return fmt.Sprintf("SYM(%v)[%v]", e.Ref, e.Value.String())
 	case BO_VSYMBOL:

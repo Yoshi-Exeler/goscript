@@ -74,8 +74,11 @@ func (r *Runtime) execUntilReturn() *BinaryTypedValue {
 		case BIND:
 			r.execBind(operation)
 		case RETURN:
-			returnExpr := operation.Args[0].(*Expression)
-			return r.unlink(r.ResolveExpression(returnExpr))
+			if len(operation.Args) > 0 {
+				returnExpr := operation.Args[0].(*Expression)
+				return r.unlink(r.ResolveExpression(returnExpr))
+			}
+			return &BinaryTypedValue{Type: BT_NOTYPE}
 		case ENTER_SCOPE:
 			r.enterScope()
 		case EXIT_SCOPE:
@@ -181,6 +184,9 @@ func (r *Runtime) unlinkedAssign(target *BinaryTypedValue, value *BinaryTypedVal
 	case BT_LIST:
 		// assign the underlying value of value to the underlying value of target
 		*target.Value.(*[]*BinaryTypedValue) = *value.Value.(*[]*BinaryTypedValue)
+	case BT_NULL:
+		target.Type = BT_NULL
+		target.Value = nil
 	default:
 		panic(fmt.Sprintf("unexpected type in unlink: %v", value.Type))
 	}
@@ -264,6 +270,8 @@ func (r *Runtime) unlink(value *BinaryTypedValue) *BinaryTypedValue {
 		value.Value = &underlying
 		return value
 	case BT_NOTYPE:
+		return value
+	case BT_NULL:
 		return value
 	default:
 		panic(fmt.Sprintf("unexpected type in unlink: %v", value.Type))
@@ -407,6 +415,10 @@ func (r *Runtime) ResolveExpression(e *Expression) *BinaryTypedValue {
 		return r.execBuiltinCall(e)
 	case BO_INDEX_INTO:
 		return r.indexIntoExpression(e)
+	case BO_NULLEXPR:
+		return &BinaryTypedValue{
+			Type: BT_NULL,
+		}
 	default:
 		// otherwise, resolve the left expression
 		left := r.ResolveExpression(e.LeftExpression)

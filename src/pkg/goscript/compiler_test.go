@@ -19,8 +19,8 @@ func TestCompileImports(t *testing.T) {
 		log.Fatal(err)
 	}
 	fmt.Println(prog)
-	// rt := NewRuntime()
-	// rt.Exec(*prog)
+	rt := NewRuntime()
+	rt.Exec(*prog)
 }
 
 // func TestCompileCall(t *testing.T) {

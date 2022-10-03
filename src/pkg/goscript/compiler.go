@@ -102,7 +102,7 @@ func (c *Compiler) generateProgram(intermediate *IntermediateProgram) (*Program,
 	c.currentProgram = c.finalizeProgram(c.currentProgram)
 	fmt.Printf("[GSC][STAGE_COMPLETION] finalization completed in %v\n", time.Since(startFinalize))
 	fmt.Printf("[GSC][generateProgram] completed in %v\n", time.Since(start))
-	c.currentProgram.SymbolTableSize = len(c.symbolIndexByName)
+	c.currentProgram.SymbolTableSize = len(c.symbolIndexByName) + 1
 	return c.currentProgram, nil
 }
 
@@ -157,7 +157,7 @@ func (c *Compiler) compileFunction(def *FunctionDefinition) {
 	c.funcBaseByName[def.Name] = len(c.currentProgram.Operations)
 	for {
 		if len(c.currentFunction.Operations)-1 == c.currentOpIndex {
-			return
+			break
 		}
 		op := c.currentFunction.Operations[c.currentOpIndex]
 		switch op.Type {
@@ -180,6 +180,13 @@ func (c *Compiler) compileFunction(def *FunctionDefinition) {
 			panic(fmt.Sprintf("unkndown operation %v cannot compile", op.Type))
 		}
 		c.currentOpIndex++
+	}
+	// if the function does not end in a return, we will insert one
+	if c.currentProgram.Operations[len(c.currentProgram.Operations)-1].Type != RETURN {
+		c.currentProgram.Operations = append(c.currentProgram.Operations, BinaryOperation{
+			Type: RETURN,
+			Args: []any{&Expression{Operator: BO_NULLEXPR}},
+		})
 	}
 }
 

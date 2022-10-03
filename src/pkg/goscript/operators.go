@@ -41,7 +41,7 @@ func applyOperator(l *BinaryTypedValue, r *BinaryTypedValue, op BinaryOperator, 
 			genericPlus[float64](l.Value, r.Value, v)
 			return v
 		default:
-			panic("invalid type for plus operator")
+			panic(fmt.Sprintf("invalid type for plus operator: %v", l.Type))
 		}
 	case BO_MINUS:
 		switch l.Type {

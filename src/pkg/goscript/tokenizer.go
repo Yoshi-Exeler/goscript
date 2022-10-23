@@ -903,8 +903,8 @@ func parseSigularType(returns string) BinaryType {
 	return BT_NOTYPE
 }
 
-func parseArguments(args string) []IntermediateVar {
-	ret := []IntermediateVar{}
+func parseArguments(args string) []*IntermediateVar {
+	ret := []*IntermediateVar{}
 	// split the args into comma separated list of variables and names
 	varsWithNames := strings.Split(args, ",")
 	for _, varWithName := range varsWithNames {
@@ -922,7 +922,7 @@ func parseArguments(args string) []IntermediateVar {
 			Name: words[0],
 			Type: parseTypeWithConstraint(words[1], VALID_TYPE),
 		}
-		ret = append(ret, current)
+		ret = append(ret, &current)
 	}
 	return ret
 }

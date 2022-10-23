@@ -73,6 +73,7 @@ func (c *Compiler) generateProgram(intermediate *IntermediateProgram) (*Program,
 	// start off with a prescan of the program, discovering all symbols and function calls
 	fmt.Println("[GSC][codePreScan] begin code prescan")
 	startScan := time.Now()
+	c.uniquifyVariables(&intermediate.Entrypoint)
 	c.prescanFunction(&intermediate.Entrypoint)
 	fmt.Printf("[GSC][STAGE_COMPLETION] code prescan completed in %v\n", time.Since(startScan))
 	// eliminate functions that are never called
@@ -328,11 +329,93 @@ func (c *Compiler) generateAssign(op *IntermediateOperation) {
 	}
 }
 
-func (c *Compiler) prescanFunction(def *FunctionDefinition) {
+func (c *Compiler) replaceAliasInExpression(expr *Expression, aliasTable map[string]string) {
+	if expr.Operator == BO_VSYMBOL_PLACEHOLDER {
+		expr.Value.Value = aliasTable[expr.Value.Value.(string)]
+	}
+	if expr.Operator == BO_FUNCTION_CALL_PLACEHOLDER {
+		placeholder := expr.Value.Value.(*FunctionCallPlaceholder)
+		fmt.Printf("%v\n", placeholder)
+		for _, arg := range placeholder.Args {
+			c.replaceAliasInExpression(arg, aliasTable)
+		}
+		if builtins[expr.Value.Value.(*FunctionCallPlaceholder).Name] == 0 {
+			function := c.funcsByName[placeholder.Name]
+			c.uniquifyVariables(function)
+		}
+	}
+	if expr.LeftExpression != nil {
+		c.replaceAliasInExpression(expr.LeftExpression, aliasTable)
+	}
+	if expr.RightExpression != nil {
+		c.replaceAliasInExpression(expr.RightExpression, aliasTable)
+	}
+}
+
+func (c *Compiler) uniquifyVariables(def *FunctionDefinition) {
+	fmt.Printf("[GSC][uniquify::%v]\n", def.Name)
+	isDefined := make(map[string]bool)
+	alias := make(map[string]string)
 	// scan the parameters
 	for _, param := range def.Accepts {
 		param := param
-		c.symbolByName[param.Name] = &param
+		if isDefined[param.Name] {
+			panic(fmt.Sprintf("parameter %v of function %v shadows another parameter", param.Name, def.Name))
+		}
+		isDefined[param.Name] = true
+		newName := "#" + def.Name + "_param_" + param.Name
+		alias[param.Name] = newName
+		param.Name = newName
+	}
+	// scan the operations for any symbols and function calls
+	for idx, op := range def.Operations {
+		switch op.Type {
+		case IM_ASSIGN:
+			name := op.Args[0].(string)
+			if isDefined[name] {
+				panic(fmt.Sprintf("variable %v defined in function %v shadows a previous declaration", name, def.Name))
+			}
+			isDefined[name] = true
+			newName := "#" + def.Name + "_var_" + name + "_" + fmt.Sprint(idx)
+			alias[name] = newName
+			op.Args[0] = newName
+			// check if an assigned expression is present
+			if len(op.Args) == 3 {
+				c.replaceAliasInExpression(op.Args[2].(*Expression), alias)
+			}
+		case IM_FOR:
+			c.symbolByName[op.Args[0].(string)] = &IntermediateVar{
+				Name: op.Args[0].(string),
+				Type: op.Args[1].(IntermediateType),
+			}
+
+			name := op.Args[0].(string)
+			if isDefined[name] {
+				panic(fmt.Sprintf("variable %v defined in function %v shadows a previous declaration", name, def.Name))
+			}
+			isDefined[name] = true
+			newName := "#" + def.Name + "_var_" + name + "_" + fmt.Sprint(idx)
+			alias[name] = newName
+			op.Args[0] = newName
+			c.replaceAliasInExpression(op.Args[2].(*Expression), alias)
+			c.replaceAliasInExpression(op.Args[3].(*Expression), alias)
+		case IM_RETURN:
+			conv, ok := op.Args[0].(*Expression)
+			if ok {
+				c.replaceAliasInExpression(conv, alias)
+			}
+		case IM_EXPRESSION:
+			c.replaceAliasInExpression(op.Args[0].(*Expression), alias)
+		}
+	}
+}
+
+func (c *Compiler) prescanFunction(def *FunctionDefinition) {
+	fmt.Printf("[GSC][prescan::%v]\n", def.Name)
+	// scan the parameters
+	for _, param := range def.Accepts {
+		param := param
+		c.symbolByName[param.Name] = param
 		c.symbolIndexByName[param.Name] = c.currentSymbolIndex
 		c.currentSymbolIndex++
 	}

@@ -7,6 +7,22 @@ import (
 	"testing"
 )
 
+func TestCompileVariableIdentity(t *testing.T) {
+	compiler := NewCompiler()
+	prog, err := compiler.Compile(CompileJob{
+		MainFilePath:       filepath.Join(TESTS, "var_identity.gs"),
+		LocalWorkspaceRoot: TESTS,
+		VendorPath:         VENDORPATH,
+		StandardLibPath:    STDPATH,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(prog)
+	rt := NewRuntime()
+	rt.Exec(*prog)
+}
+
 func TestCompileImports(t *testing.T) {
 	compiler := NewCompiler()
 	prog, err := compiler.Compile(CompileJob{

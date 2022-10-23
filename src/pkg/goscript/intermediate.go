@@ -50,7 +50,7 @@ type PartialExpression struct {
 
 type FunctionDefinition struct {
 	Name       string
-	Accepts    []IntermediateVar
+	Accepts    []*IntermediateVar
 	Returns    IntermediateType
 	Operations []*IntermediateOperation
 }
